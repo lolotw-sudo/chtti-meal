@@ -366,7 +366,12 @@
 
     $('code').textContent = course;
     $('title').textContent = cfg.title || '用餐需求調查';
-    $('meta').textContent = [cfg.term, cfg.room].filter(Boolean).join(' · ');
+    // 不顯示教室：meals.json 的教室來自登記簿，會過期（登記簿 G302／課表已改 GB102）。
+    // 教室以入口頁為準，那邊讀的是課表，還會處理中途換教室。
+    var ds = cfg.days || [];
+    $('meta').textContent = ds.length > 1
+      ? ds[0].label + '～' + ds[ds.length - 1].label + '．共 ' + ds.length + ' 天'
+      : (ds[0] ? ds[0].label : '');
     document.title = (cfg.title || '用餐需求調查') + ' - 用餐調查';
 
     try {
