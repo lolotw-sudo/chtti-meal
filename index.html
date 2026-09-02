@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>用餐需求調查</title>
+<style>
+  :root { color-scheme: light dark; --bg:#f7f7f8; --fg:#1c1c1e; --card:#fff; --line:#e3e3e6; --accent:#0a7c5a; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#141416; --fg:#f2f2f4; --card:#1f1f22; --line:#34343a; --accent:#3ec49a; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:24px 16px 48px; background:var(--bg); color:var(--fg);
+          font-family:-apple-system,"PingFang TC","Noto Sans TC",sans-serif; line-height:1.6; }
+  main { max-width:520px; margin:0 auto; }
+  h1 { font-size:1.5rem; margin:0 0 4px; }
+  p.hint { margin:0 0 20px; color:#6b6b70; }
+  @media (prefers-color-scheme: dark) { p.hint { color:#a0a0a8; } }
+  ul { list-style:none; margin:0; padding:0; }
+  li { margin:0 0 12px; }
+  a.card { display:block; padding:16px; background:var(--card); border:1px solid var(--line);
+            border-left:5px solid var(--accent); border-radius:12px; text-decoration:none; color:inherit; }
+  a.card:hover, a.card:focus { border-color:var(--accent); outline:2px solid var(--accent); outline-offset:2px; }
+  .code { font-size:.8rem; letter-spacing:.05em; color:var(--accent); font-weight:600; }
+  .name { font-size:1.1rem; font-weight:600; margin:2px 0; }
+  .when { font-size:.85rem; color:#6b6b70; }
+  @media (prefers-color-scheme: dark) { .when { color:#a0a0a8; } }
+  details { margin-top:24px; }
+  summary { cursor:pointer; color:var(--accent); font-weight:600; padding:8px 0; }
+  footer { margin-top:32px; font-size:.75rem; color:#8e8e93; text-align:center; }
+</style>
+</head>
+<body>
+<main>
+  <h1>🍱 用餐需求調查</h1>
+  <p class="hint" id="hint">請選擇你的班別</p>
+  <ul id="today"></ul>
+  <details id="rest"><summary>看其他班別</summary><ul id="others"></ul></details>
+  <footer>中華電信學院 · 導師 李怡菁（LOLO）<br>資料更新：2026-09-02 11:35</footer>
+</main>
+<script>
+const COURSES = [{"code": "LD297P002", "title": "線路規劃設計新進人員訓練班 第002期", "url": "https://docs.google.com/forms/d/e/1FAIpQLSeMTkVgCAOTf2MJX7o5yRE1r_cKsfsHSRltR2KoOSmVOhXkXw/viewform", "dates": ["2026-08-26", "2026-08-27", "2026-09-08"]}, {"code": "LT214P007", "title": "CEMIS-II設計管理作業實務班 第007期", "url": "https://docs.google.com/forms/d/e/1FAIpQLSdOdI7AhpPAFMS7frxmZ7ab582tz6O85-s9iGuJVCNH2mU45Q/viewform", "dates": ["2026-09-02"]}, {"code": "LC247P005", "title": "CHTGIS 新一代介面暨圖資查詢與編輯作業班 第005期", "url": "https://docs.google.com/forms/d/e/1FAIpQLSekGB_Hyp_VE7-oCigAW4gBGthjPZQ31_A7ZJOaMRJgMaH0pg/viewform", "dates": ["2026-09-03", "2026-09-04", "2026-09-15"]}];
+const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Taipei' }).format(new Date());
+const showAll = new URLSearchParams(location.search).has('all');
+
+const card = c => {
+  const li = document.createElement('li');
+  const a = document.createElement('a');
+  a.className = 'card'; a.href = c.url; a.rel = 'noopener';
+  a.innerHTML = '<div class="code"></div><div class="name"></div><div class="when"></div>';
+  a.querySelector('.code').textContent = c.code;
+  a.querySelector('.name').textContent = c.title;
+  a.querySelector('.when').textContent = c.dates[0] + (c.dates.length > 1 ? ' 起，共 ' + c.dates.length + ' 天' : '');
+  li.appendChild(a);
+  return li;
+};
+
+const mine = COURSES.filter(c => c.dates.includes(today));
+const rest = COURSES.filter(c => !c.dates.includes(today));
+
+if (mine.length === 1 && !showAll) {
+  const c = mine[0];
+  document.getElementById('hint').textContent = '正在帶你前往「' + c.title + '」的用餐調查…';
+  document.getElementById('today').appendChild(card(c));
+  document.getElementById('rest').innerHTML =
+    '<a href="?all=1" style="color:var(--accent)">不是這個班？看全部班別</a>';
+  setTimeout(() => location.replace(c.url), 1400);
+} else {
+  const list = mine.length ? mine : COURSES;
+  document.getElementById('hint').textContent =
+    mine.length ? '今天上課的班別，請點自己的班：'
+                : (COURSES.length ? '今天沒有課程，以下是近期班別：' : '目前沒有可填寫的用餐調查表。');
+  list.forEach(c => document.getElementById('today').appendChild(card(c)));
+  if (mine.length && rest.length) rest.forEach(c => document.getElementById('others').appendChild(card(c)));
+  else document.getElementById('rest').remove();
+}
+</script>
+<noscript>
+  <ul><li><a href="https://docs.google.com/forms/d/e/1FAIpQLSeMTkVgCAOTf2MJX7o5yRE1r_cKsfsHSRltR2KoOSmVOhXkXw/viewform">LD297P002 線路規劃設計新進人員訓練班 第002期（2026-08-26 起）</a></li><li><a href="https://docs.google.com/forms/d/e/1FAIpQLSdOdI7AhpPAFMS7frxmZ7ab582tz6O85-s9iGuJVCNH2mU45Q/viewform">LT214P007 CEMIS-II設計管理作業實務班 第007期（2026-09-02 起）</a></li><li><a href="https://docs.google.com/forms/d/e/1FAIpQLSekGB_Hyp_VE7-oCigAW4gBGthjPZQ31_A7ZJOaMRJgMaH0pg/viewform">LC247P005 CHTGIS 新一代介面暨圖資查詢與編輯作業班 第005期（2026-09-03 起）</a></li></ul>
+</noscript>
+</body>
+</html>
