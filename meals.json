@@ -1,0 +1,171 @@
+{
+ "api": "https://script.google.com/macros/s/AKfycbwfvueeAWS5888fns4bmCOc335OEJ-DAfepPFJrP_V2WTMatrU79B8L1QPtjpy1rsH0/exec",
+ "updated": "2026-09-02 15:48",
+ "courses": {
+  "LD21BP001": {
+   "title": "線路細部設計PROGECAD實作班 第001期",
+   "room": "綜合大樓G302",
+   "days": [
+    {
+     "label": "5/14（四）",
+     "lunch": true,
+     "dinner": false
+    }
+   ]
+  },
+  "SA201P002": {
+   "title": "AI導向自治網路、數位分身暨智慧維運研習班 第002期",
+   "room": "",
+   "days": [
+    {
+     "label": "5/28（四）",
+     "lunch": true,
+     "dinner": true
+    }
+   ]
+  },
+  "LD213P007": {
+   "title": "MSAN大批改接作業流程研習班 第007期",
+   "room": "綜合大樓G300",
+   "days": [
+    {
+     "label": "6/23（二）",
+     "lunch": true,
+     "dinner": false
+    }
+   ]
+  },
+  "LT214P007": {
+   "title": "CEMIS-II設計管理作業實務班 第007期",
+   "room": "綜合大樓G302",
+   "days": [
+    {
+     "label": "9/2（三）",
+     "lunch": true,
+     "dinner": false
+    }
+   ]
+  },
+  "LD11BP001": {
+   "title": "ProgeCAD新手基礎操作班 第001期",
+   "room": "綜合大樓2樓 G202教室(電梯出來右手邊很漂亮的那間)",
+   "days": [
+    {
+     "label": "7/9（四）",
+     "lunch": true,
+     "dinner": false
+    }
+   ]
+  },
+  "LS202P007": {
+   "title": "線路損害賠償法律實務班 第007期",
+   "room": "綜合大樓G509",
+   "days": [
+    {
+     "label": "8/12（三）",
+     "lunch": true,
+     "dinner": true
+    },
+    {
+     "label": "8/13（四）",
+     "lunch": true,
+     "dinner": true
+    }
+   ]
+  },
+  "LD223P005": {
+   "title": "光進銅減分析訓練班 第005期",
+   "room": "綜合大樓G300",
+   "days": [
+    {
+     "label": "9/16（三）",
+     "lunch": true,
+     "dinner": false
+    }
+   ]
+  },
+  "LC247P005": {
+   "title": "CHTGIS 新一代介面暨圖資查詢與編輯作業班 第005期",
+   "room": "綜合大樓G302",
+   "days": [
+    {
+     "label": "9/3（四）",
+     "lunch": true,
+     "dinner": true
+    },
+    {
+     "label": "9/4（五）",
+     "lunch": true,
+     "dinner": false
+    },
+    {
+     "label": "9/15（二）",
+     "lunch": true,
+     "dinner": false
+    }
+   ]
+  },
+  "LD297P002": {
+   "title": "線路規劃設計新進人員訓練班 第002期",
+   "room": "實驗大樓L408",
+   "days": [
+    {
+     "label": "8/12（三）",
+     "lunch": true,
+     "dinner": true
+    },
+    {
+     "label": "8/13（四）",
+     "lunch": true,
+     "dinner": true
+    },
+    {
+     "label": "8/14（五）",
+     "lunch": true,
+     "dinner": false
+    },
+    {
+     "label": "8/19（三）",
+     "lunch": true,
+     "dinner": true
+    },
+    {
+     "label": "8/20（四）",
+     "lunch": true,
+     "dinner": true
+    },
+    {
+     "label": "8/21（五）",
+     "lunch": true,
+     "dinner": false
+    },
+    {
+     "label": "8/26（三）",
+     "lunch": true,
+     "dinner": true
+    },
+    {
+     "label": "8/27（四）",
+     "lunch": true,
+     "dinner": false
+    },
+    {
+     "label": "9/8（二）",
+     "lunch": true,
+     "dinner": false
+    }
+   ]
+  },
+  "LD11BP002": {
+   "title": "ProgeCAD新手基礎操作班 第002期",
+   "room": "G202",
+   "days": [
+    {
+     "label": "7/21（二）",
+     "lunch": true,
+     "dinner": false
+    }
+   ]
+  }
+ }
+}
