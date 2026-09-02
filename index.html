@@ -6,79 +6,117 @@
 <meta name="robots" content="noindex">
 <title>用餐需求調查</title>
 <style>
-  :root { color-scheme: light dark; --bg:#f7f7f8; --fg:#1c1c1e; --card:#fff; --line:#e3e3e6; --accent:#0a7c5a; }
+  :root { color-scheme: light dark; --bg:#f7f7f8; --fg:#1c1c1e; --card:#fff; --line:#e3e3e6;
+           --accent:#0a7c5a; --muted:#6b6b70; --warn-bg:#fff6e0; --warn-line:#e8a33d; --warn-fg:#7a4a06; }
   @media (prefers-color-scheme: dark) {
-    :root { --bg:#141416; --fg:#f2f2f4; --card:#1f1f22; --line:#34343a; --accent:#3ec49a; }
+    :root { --bg:#141416; --fg:#f2f2f4; --card:#1f1f22; --line:#34343a;
+             --accent:#3ec49a; --muted:#a0a0a8; --warn-bg:#3a2e12; --warn-line:#c79038; --warn-fg:#ffd591; }
   }
   * { box-sizing: border-box; }
   body { margin:0; padding:24px 16px 48px; background:var(--bg); color:var(--fg);
           font-family:-apple-system,"PingFang TC","Noto Sans TC",sans-serif; line-height:1.6; }
   main { max-width:520px; margin:0 auto; }
-  h1 { font-size:1.5rem; margin:0 0 4px; }
-  p.hint { margin:0 0 20px; color:#6b6b70; }
-  @media (prefers-color-scheme: dark) { p.hint { color:#a0a0a8; } }
+  h1 { font-size:1.5rem; margin:0 0 12px; }
+  h2 { font-size:1rem; margin:0 0 8px; }
+  p { margin:0 0 12px; }
+  .notice { background:var(--warn-bg); border:1px solid var(--warn-line); border-radius:12px;
+             padding:14px 16px; margin:0 0 20px; color:var(--warn-fg); }
+  .notice strong { font-size:1.05rem; }
+  .notice .big { display:block; font-size:1.1rem; font-weight:700; margin-top:6px; }
+  p.hint { margin:0 0 12px; color:var(--muted); font-weight:600; }
   ul { list-style:none; margin:0; padding:0; }
   li { margin:0 0 12px; }
   a.card { display:block; padding:16px; background:var(--card); border:1px solid var(--line);
             border-left:5px solid var(--accent); border-radius:12px; text-decoration:none; color:inherit; }
   a.card:hover, a.card:focus { border-color:var(--accent); outline:2px solid var(--accent); outline-offset:2px; }
   .code { font-size:.8rem; letter-spacing:.05em; color:var(--accent); font-weight:600; }
-  .name { font-size:1.1rem; font-weight:600; margin:2px 0; }
-  .when { font-size:.85rem; color:#6b6b70; }
-  @media (prefers-color-scheme: dark) { .when { color:#a0a0a8; } }
-  details { margin-top:24px; }
+  .name { font-size:1.1rem; font-weight:600; margin:2px 0 8px; }
+  .meta { font-size:.9rem; color:var(--muted); display:flex; gap:8px; align-items:flex-start; }
+  .meta + .meta { margin-top:2px; }
+  .meta .ico { flex:none; }
+  details { margin-top:20px; }
   summary { cursor:pointer; color:var(--accent); font-weight:600; padding:8px 0; }
+  .rules { margin-top:32px; padding-top:20px; border-top:1px solid var(--line); }
+  .rules h2 { font-size:1.05rem; }
+  .rules dl { margin:0; }
+  .rules dt { font-weight:700; margin-top:14px; }
+  .rules dd { margin:4px 0 0; color:var(--muted); font-size:.92rem; }
+  .rules dd em { font-style:normal; color:var(--fg); font-weight:600; }
   footer { margin-top:32px; font-size:.75rem; color:#8e8e93; text-align:center; }
 </style>
 </head>
 <body>
 <main>
   <h1>🍱 用餐需求調查</h1>
-  <p class="hint" id="hint">請選擇你的班別</p>
+
+  <div class="notice">
+    <strong>學院已預設幫你準備午餐，不用填表。</strong>
+    <span class="big">只有「今天中午不在學院用餐」的人才需要填！</span>
+  </div>
+
+  <p class="hint" id="hint">請點自己的班：</p>
   <ul id="today"></ul>
   <details id="rest"><summary>看其他班別</summary><ul id="others"></ul></details>
-  <footer>中華電信學院 · 導師 李怡菁（LOLO）<br>資料更新：2026-09-02 11:41</footer>
+
+  <section class="rules">
+    <h2>學院供餐規則</h2>
+    <dl>
+      <dt>🍚 午餐</dt>
+      <dd><em>預設供應，不必填表。</em>臨時不在學院用餐（外出、請假、自己帶）的人，
+          請進表單勾選「不用餐」，讓廚房少做一個便當。
+          課程若是下午才開始、或中午前就下課，當天本來就沒有午餐。</dd>
+      <dt>🍱 晚餐</dt>
+      <dd>供應對象是<em>當晚住宿的學員</em>；條件是當天下課時間在 <em>17:20 以後</em>，
+          或隔天還有課需要留宿。需要的人請在表單選葷食或素食。
+          全院合計不足 5 人恕不供餐，會另行通知。</dd>
+    </dl>
+  </section>
+
+  <footer>中華電信學院 · 導師 李怡菁（LOLO）<br>資料更新：2026-09-02 11:50</footer>
 </main>
 <script>
-const COURSES = [{"code": "LD297P002", "title": "線路規劃設計新進人員訓練班 第002期", "url": "https://docs.google.com/forms/d/e/1FAIpQLSeMTkVgCAOTf2MJX7o5yRE1r_cKsfsHSRltR2KoOSmVOhXkXw/viewform", "dates": ["2026-08-26", "2026-08-27", "2026-09-08"]}, {"code": "LT214P007", "title": "CEMIS-II設計管理作業實務班 第007期", "url": "https://docs.google.com/forms/d/e/1FAIpQLSdOdI7AhpPAFMS7frxmZ7ab582tz6O85-s9iGuJVCNH2mU45Q/viewform", "dates": ["2026-09-02"]}, {"code": "LC247P005", "title": "CHTGIS 新一代介面暨圖資查詢與編輯作業班 第005期", "url": "https://docs.google.com/forms/d/e/1FAIpQLSekGB_Hyp_VE7-oCigAW4gBGthjPZQ31_A7ZJOaMRJgMaH0pg/viewform", "dates": ["2026-09-03", "2026-09-04", "2026-09-15"]}];
+const COURSES = [{"code": "LD297P002", "title": "線路規劃設計新進人員訓練班 第002期", "room": "實驗大樓L408", "url": "https://docs.google.com/forms/d/e/1FAIpQLSeMTkVgCAOTf2MJX7o5yRE1r_cKsfsHSRltR2KoOSmVOhXkXw/viewform", "dates": ["2026-08-26", "2026-08-27", "2026-09-08"], "days": ["8/26（三）", "8/27（四）", "9/8（二）"]}, {"code": "LT214P007", "title": "CEMIS-II設計管理作業實務班 第007期", "room": "綜合大樓G302", "url": "https://docs.google.com/forms/d/e/1FAIpQLSdOdI7AhpPAFMS7frxmZ7ab582tz6O85-s9iGuJVCNH2mU45Q/viewform", "dates": ["2026-09-02"], "days": ["9/2（三）"]}, {"code": "LC247P005", "title": "CHTGIS 新一代介面暨圖資查詢與編輯作業班 第005期", "room": "綜合大樓G302", "url": "https://docs.google.com/forms/d/e/1FAIpQLSekGB_Hyp_VE7-oCigAW4gBGthjPZQ31_A7ZJOaMRJgMaH0pg/viewform", "dates": ["2026-09-03", "2026-09-04", "2026-09-15"], "days": ["9/3（四）", "9/4（五）", "9/15（二）"]}];
 const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Taipei' }).format(new Date());
-const showAll = new URLSearchParams(location.search).has('all');
+
+const div = (cls, text) => {
+  const el = document.createElement('div');
+  if (cls) el.className = cls;
+  if (text) el.textContent = text;
+  return el;
+};
+
+const meta = (ico, text) => {           // 沒有這項資料（例如登記簿沒填教室）就整行不出現
+  if (!text) return null;
+  const row = div('meta');
+  const i = document.createElement('span'); i.className = 'ico'; i.textContent = ico;
+  const t = document.createElement('span'); t.textContent = text;
+  row.append(i, t);
+  return row;
+};
 
 const card = c => {
-  const li = document.createElement('li');
   const a = document.createElement('a');
   a.className = 'card'; a.href = c.url; a.rel = 'noopener';
-  a.innerHTML = '<div class="code"></div><div class="name"></div><div class="when"></div>';
-  a.querySelector('.code').textContent = c.code;
-  a.querySelector('.name').textContent = c.title;
-  a.querySelector('.when').textContent = c.dates[0] + (c.dates.length > 1 ? ' 起，共 ' + c.dates.length + ' 天' : '');
+  a.append(div('code', c.code), div('name', c.title));
+  [meta('📅', c.days.join('、')), meta('📍', c.room)].forEach(m => m && a.appendChild(m));
+  const li = document.createElement('li');
   li.appendChild(a);
   return li;
 };
 
 const mine = COURSES.filter(c => c.dates.includes(today));
 const rest = COURSES.filter(c => !c.dates.includes(today));
+const list = mine.length ? mine : COURSES;
 
-if (mine.length === 1 && !showAll) {
-  const c = mine[0];
-  document.getElementById('hint').textContent = '正在帶你前往「' + c.title + '」的用餐調查…';
-  document.getElementById('today').appendChild(card(c));
-  const back = document.createElement('p');   // 換掉整個 details，留 <details> 會顯示瀏覽器預設的「詳細資料」
-  back.innerHTML = '<a href="?all=1" style="color:var(--accent)">不是這個班？看全部班別</a>';
-  document.getElementById('rest').replaceWith(back);
-  setTimeout(() => location.replace(c.url), 1400);
-} else {
-  const list = mine.length ? mine : COURSES;
-  document.getElementById('hint').textContent =
-    mine.length ? '今天上課的班別，請點自己的班：'
-                : (COURSES.length ? '今天沒有課程，以下是近期班別：' : '目前沒有可填寫的用餐調查表。');
-  list.forEach(c => document.getElementById('today').appendChild(card(c)));
-  if (mine.length && rest.length) rest.forEach(c => document.getElementById('others').appendChild(card(c)));
-  else document.getElementById('rest').remove();
-}
+document.getElementById('hint').textContent =
+  mine.length ? '今天上課的班別，請點自己的班：'
+              : (COURSES.length ? '今天沒有課程，以下是近期班別：' : '目前沒有可填寫的用餐調查表。');
+list.forEach(c => document.getElementById('today').appendChild(card(c)));
+if (mine.length && rest.length) rest.forEach(c => document.getElementById('others').appendChild(card(c)));
+else document.getElementById('rest').remove();
 </script>
 <noscript>
-  <ul><li><a href="https://docs.google.com/forms/d/e/1FAIpQLSeMTkVgCAOTf2MJX7o5yRE1r_cKsfsHSRltR2KoOSmVOhXkXw/viewform">LD297P002 線路規劃設計新進人員訓練班 第002期（2026-08-26 起）</a></li><li><a href="https://docs.google.com/forms/d/e/1FAIpQLSdOdI7AhpPAFMS7frxmZ7ab582tz6O85-s9iGuJVCNH2mU45Q/viewform">LT214P007 CEMIS-II設計管理作業實務班 第007期（2026-09-02 起）</a></li><li><a href="https://docs.google.com/forms/d/e/1FAIpQLSekGB_Hyp_VE7-oCigAW4gBGthjPZQ31_A7ZJOaMRJgMaH0pg/viewform">LC247P005 CHTGIS 新一代介面暨圖資查詢與編輯作業班 第005期（2026-09-03 起）</a></li></ul>
+  <ul><li><a href="https://docs.google.com/forms/d/e/1FAIpQLSeMTkVgCAOTf2MJX7o5yRE1r_cKsfsHSRltR2KoOSmVOhXkXw/viewform">LD297P002 線路規劃設計新進人員訓練班 第002期（8/26（三）、8/27（四）、9/8（二），實驗大樓L408）</a></li><li><a href="https://docs.google.com/forms/d/e/1FAIpQLSdOdI7AhpPAFMS7frxmZ7ab582tz6O85-s9iGuJVCNH2mU45Q/viewform">LT214P007 CEMIS-II設計管理作業實務班 第007期（9/2（三），綜合大樓G302）</a></li><li><a href="https://docs.google.com/forms/d/e/1FAIpQLSekGB_Hyp_VE7-oCigAW4gBGthjPZQ31_A7ZJOaMRJgMaH0pg/viewform">LC247P005 CHTGIS 新一代介面暨圖資查詢與編輯作業班 第005期（9/3（四）、9/4（五）、9/15（二），綜合大樓G302）</a></li></ul>
 </noscript>
 </body>
 </html>
