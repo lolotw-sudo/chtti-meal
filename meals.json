@@ -1,6 +1,6 @@
 {
  "api": "https://script.google.com/macros/s/AKfycbwfvueeAWS5888fns4bmCOc335OEJ-DAfepPFJrP_V2WTMatrU79B8L1QPtjpy1rsH0/exec",
- "updated": "2026-09-05 09:09",
+ "updated": "2026-09-06 09:33",
  "courses": {
   "LD21BP001": {
    "title": "線路細部設計PROGECAD實作班 第001期",
@@ -12,11 +12,41 @@
     }
    ]
   },
+  "SA201P002": {
+   "title": "AI導向自治網路、數位分身暨智慧維運研習班 第002期",
+   "days": [
+    {
+     "label": "5/28（四）",
+     "lunch": true,
+     "dinner": true
+    }
+   ]
+  },
+  "LD213P007": {
+   "title": "MSAN大批改接作業流程研習班 第007期",
+   "days": [
+    {
+     "label": "6/23（二）",
+     "lunch": true,
+     "dinner": false
+    }
+   ]
+  },
   "LT214P007": {
    "title": "CEMIS-II設計管理作業實務班 第007期",
    "days": [
     {
      "label": "9/2（三）",
+     "lunch": true,
+     "dinner": false
+    }
+   ]
+  },
+  "LF266P037": {
+   "title": "FTTH ODN光纖網路規劃設計基礎班 第037期",
+   "days": [
+    {
+     "label": "10/21（三）",
      "lunch": true,
      "dinner": false
     }
@@ -52,6 +82,26 @@
    "days": [
     {
      "label": "9/16（三）",
+     "lunch": true,
+     "dinner": false
+    }
+   ]
+  },
+  "LC247P005": {
+   "title": "CHTGIS 新一代介面暨圖資查詢與編輯作業班 第005期",
+   "days": [
+    {
+     "label": "9/3（四）",
+     "lunch": true,
+     "dinner": true
+    },
+    {
+     "label": "9/4（五）",
+     "lunch": true,
+     "dinner": false
+    },
+    {
+     "label": "9/15（二）",
      "lunch": true,
      "dinner": false
     }
