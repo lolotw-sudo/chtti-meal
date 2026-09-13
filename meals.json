@@ -1,6 +1,6 @@
 {
  "api": "https://script.google.com/macros/s/AKfycbwfvueeAWS5888fns4bmCOc335OEJ-DAfepPFJrP_V2WTMatrU79B8L1QPtjpy1rsH0/exec",
- "updated": "2026-09-11 07:55",
+ "updated": "2026-09-13 08:42",
  "courses": {
   "LD21BP001": {
    "title": "線路細部設計PROGECAD實作班 第001期",
@@ -57,16 +57,6 @@
    "days": [
     {
      "label": "7/9（四）",
-     "lunch": true,
-     "dinner": false
-    }
-   ]
-  },
-  "LD21AP001": {
-   "title": "電信線路基本設計書規劃及編製 第001期",
-   "days": [
-    {
-     "label": "10/23（五）",
      "lunch": true,
      "dinner": false
     }
@@ -183,6 +173,16 @@
     {
      "label": "7/21（二）",
      "lunch": true,
+     "dinner": false
+    }
+   ]
+  },
+  "LD11AP001": {
+   "title": "電信線路基本設計書規劃及編製 第001期",
+   "days": [
+    {
+     "label": "10/23（五）",
+     "lunch": false,
      "dinner": false
     }
    ]
