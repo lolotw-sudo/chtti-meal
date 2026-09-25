@@ -1,6 +1,6 @@
 {
  "api": "https://script.google.com/macros/s/AKfycbwfvueeAWS5888fns4bmCOc335OEJ-DAfepPFJrP_V2WTMatrU79B8L1QPtjpy1rsH0/exec",
- "updated": "2026-09-23 07:55",
+ "updated": "2026-09-25 08:54",
  "courses": {
   "SA201P002": {
    "title": "AI導向自治網路、數位分身暨智慧維運研習班 第002期",
@@ -187,6 +187,36 @@
     },
     {
      "label": "10/7（三）",
+     "lunch": true,
+     "dinner": false
+    }
+   ]
+  },
+  "LC242P002": {
+   "title": "CHTGIS管理與圖資維運班 第002期",
+   "days": [
+    {
+     "label": "11/3（二）",
+     "lunch": true,
+     "dinner": true
+    },
+    {
+     "label": "11/4（三）",
+     "lunch": true,
+     "dinner": false
+    },
+    {
+     "label": "11/9（一）",
+     "lunch": true,
+     "dinner": true
+    },
+    {
+     "label": "11/10（二）",
+     "lunch": true,
+     "dinner": true
+    },
+    {
+     "label": "11/11（三）",
      "lunch": true,
      "dinner": false
     }
