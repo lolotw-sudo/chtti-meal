@@ -1,6 +1,6 @@
 {
  "api": "https://script.google.com/macros/s/AKfycbwfvueeAWS5888fns4bmCOc335OEJ-DAfepPFJrP_V2WTMatrU79B8L1QPtjpy1rsH0/exec",
- "updated": "2026-10-05 17:35",
+ "updated": "2026-10-06 07:55",
  "courses": {
   "LD213P007": {
    "title": "MSAN大批改接作業流程研習班 第007期",
@@ -42,11 +42,11 @@
     }
    ]
   },
-  "LC249P001": {
-   "title": "線路規劃設計土木管道專業養成訓練班 第001期",
+  "LF320P011": {
+   "title": "FTTH ODN規劃設計研習班 第011期",
    "days": [
     {
-     "label": "10/23（五）",
+     "label": "11/20（五）",
      "lunch": true,
      "dinner": false
     }
