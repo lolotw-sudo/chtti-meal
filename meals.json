@@ -1,6 +1,6 @@
 {
  "api": "https://script.google.com/macros/s/AKfycbwfvueeAWS5888fns4bmCOc335OEJ-DAfepPFJrP_V2WTMatrU79B8L1QPtjpy1rsH0/exec",
- "updated": "2026-10-13 12:55",
+ "updated": "2026-10-14 12:55",
  "courses": {
   "LD213P007": {
    "title": "MSAN大批改接作業流程研習班 第007期",
@@ -196,12 +196,12 @@
    "title": "CHTGIS管理與圖資維運班 第002期",
    "days": [
     {
-     "label": "11/3（二）",
+     "label": "11/2（一）",
      "lunch": true,
      "dinner": true
     },
     {
-     "label": "11/4（三）",
+     "label": "11/3（二）",
      "lunch": true,
      "dinner": false
     },
