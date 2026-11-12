@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>工作台雲端版</title>
+<title>網路學系 學習成效雲端版</title>
 <!-- 工作台雲端版前台（規格：trainer-tools 的 docs/cloud-edition-spec.md）。
      這頁只有畫面：不含密碼、資料或授權；所有動作都送到 Apps Script 後台並在那裡驗證。
      Excel 用瀏覽器內建的解壓縮與 XML 解析直接讀，不引用外部函式庫；QR 用自行託管、固定版本的 qrcode-generator。 -->
@@ -77,8 +77,8 @@
 </head>
 <body>
 <main>
-  <h1>工作台雲端版</h1>
-  <p class="sub">學習回饋問卷產生 ＆ 學習分析報告</p>
+  <h1>網路學系 學習成效雲端版</h1>
+  <p class="sub">提供網路學系老師 自動化產生問卷、通知與學習分析報告</p>
   <p id="dev-banner" class="warn" hidden>🧪 本機模擬版：不會連到 Google、不會建立真的表單，表單連結都是假的（點了只會看到說明頁）。資料關掉伺服器就消失。</p>
   <p id="msg" role="status" aria-live="polite"></p>
 
@@ -92,6 +92,7 @@
     <form id="f-login">
       <label class="field" for="i-password">共用密碼</label>
       <input id="i-password" type="password" autocomplete="current-password" required maxlength="200">
+      <p class="hint">為保護資料安全，請先跟 LOLO 老師索取通關密碼。</p>
       <button type="submit">登入</button>
     </form>
   </section>
@@ -176,7 +177,7 @@
     </div>
   </section>
 
-  <footer>工作台雲端版</footer>
+  <footer>網路學系 學習成效雲端版</footer>
 </main>
 
 <script src="vendor/qrcode-generator-1.4.4.js"></script>
