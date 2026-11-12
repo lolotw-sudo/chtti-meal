@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>工作台雲端版</title>
+<!-- 工作台雲端版前台（規格：trainer-tools 的 docs/cloud-edition-spec.md）。
+     這頁只有畫面：不含密碼、資料或授權；所有動作都送到 Apps Script 後台並在那裡驗證。
+     Excel 用瀏覽器內建的解壓縮與 XML 解析直接讀，不引用外部函式庫；QR 用自行託管、固定版本的 qrcode-generator。 -->
+<style>
+  :root { color-scheme: light dark; --bg:#f7f7f8; --fg:#1c1c1e; --card:#fff; --line:#e3e3e6;
+          --accent:#0a7c5a; --accent-fg:#fff; --muted:#6b6b70; --warn-bg:#fff6e0;
+          --warn-line:#e8a33d; --warn-fg:#7a4a06; --err:#b3261e; --ok-bg:#e8f6f0; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#141416; --fg:#f2f2f4; --card:#1f1f22; --line:#34343a;
+            --accent:#3ec49a; --accent-fg:#10241d; --muted:#a0a0a8; --warn-bg:#3a2e12;
+            --warn-line:#c79038; --warn-fg:#ffd591; --err:#ff8a80; --ok-bg:#163328; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:24px 16px 64px; background:var(--bg); color:var(--fg);
+         font-family:-apple-system,"PingFang TC","Noto Sans TC",sans-serif; line-height:1.6; }
+  main { max-width:640px; margin:0 auto; }
+  h1 { font-size:1.4rem; margin:0; }
+  h2 { font-size:1.1rem; margin:0 0 10px; }
+  .sub { color:var(--muted); margin:0 0 16px; font-size:.95rem; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin:0 0 12px; }
+  label.field { display:block; font-weight:600; margin:12px 0 6px; }
+  label.field:first-child { margin-top:0; }
+  input[type=text], input[type=email], input[type=password], input[type=number], textarea {
+    width:100%; padding:12px; font-size:1rem; border-radius:10px; border:1px solid var(--line);
+    background:var(--bg); color:var(--fg); font-family:inherit; }
+  textarea { min-height:96px; resize:vertical; }
+  textarea[readonly] { min-height:180px; font-size:.92rem; }
+  input:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible, summary:focus-visible {
+    outline:2px solid var(--accent); outline-offset:2px; }
+  input[type=file] { width:100%; padding:10px 0; font-size:1rem; }
+  button { width:100%; padding:14px; font-size:1.02rem; font-weight:700; border:0; cursor:pointer;
+           border-radius:12px; background:var(--accent); color:var(--accent-fg); margin-top:14px; }
+  button:disabled { opacity:.55; cursor:default; }
+  button.ghost { background:transparent; color:var(--accent); border:1px solid var(--accent); }
+  button.small { width:auto; padding:6px 12px; font-size:.88rem; margin:0; }
+  button.link { width:auto; padding:0; margin:0; background:none; color:var(--accent); font-weight:600;
+                font-size:inherit; text-decoration:underline; }
+  .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .row > button { flex:1 1 140px; }
+  .hint { color:var(--muted); font-size:.9rem; margin:6px 0 0; }
+  #msg { min-height:1.6em; margin:0 0 12px; font-weight:600; }
+  #msg.err { color:var(--err); }
+  #msg.ok { color:var(--accent); }
+  .warn { background:var(--warn-bg); border:1px solid var(--warn-line); color:var(--warn-fg);
+          border-radius:12px; padding:12px 14px; margin:12px 0 0; }
+  .okbox { background:var(--ok-bg); border-radius:12px; padding:12px 14px; margin:0 0 12px; }
+  .tabs { display:flex; gap:8px; margin:0 0 12px; }
+  .tabs button { margin:0; background:var(--card); color:var(--fg); border:1px solid var(--line); }
+  .tabs button[aria-selected=true] { background:var(--accent); color:var(--accent-fg); border-color:var(--accent); }
+  .who { font-size:.92rem; color:var(--muted); margin:0 0 12px; }
+  .scroll { overflow-x:auto; }
+  table { width:100%; min-width:420px; border-collapse:collapse; margin-top:8px; font-size:.92rem; }
+  th, td { text-align:left; padding:7px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--muted); font-weight:600; font-size:.85rem; }
+  fieldset { border:0; margin:14px 0 0; padding:0; }
+  legend { font-weight:600; padding:0; margin:0 0 6px; }
+  .days label { display:inline-flex; align-items:center; gap:6px; margin:0 14px 8px 0; cursor:pointer; }
+  .days input { width:18px; height:18px; }
+  .qr { display:block; margin:8px auto; width:200px; height:200px; image-rendering:pixelated; }
+  .linkline { word-break:break-all; margin:4px 0; }
+  .meta { color:var(--muted); font-size:.88rem; margin:0; }
+  details { margin-top:10px; }
+  summary { cursor:pointer; font-weight:600; color:var(--accent); }
+  .status { font-weight:700; }
+  .status.done { color:var(--accent); }
+  .status.fail { color:var(--err); }
+  footer { margin-top:28px; font-size:.75rem; color:#8e8e93; text-align:center; }
+  [hidden] { display:none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>工作台雲端版</h1>
+  <p class="sub">學習回饋問卷產生 ＆ 學習分析報告</p>
+  <p id="dev-banner" class="warn" hidden>🧪 本機模擬版：不會連到 Google、不會建立真的表單，表單連結都是假的（點了只會看到說明頁）。資料關掉伺服器就消失。</p>
+  <p id="msg" role="status" aria-live="polite"></p>
+
+  <section id="v-unset" class="card" hidden>
+    <h2>還沒設定好</h2>
+    <p>這個頁面的後台尚未接上，請聯絡維護的老師。</p>
+  </section>
+
+  <!-- 登入 -->
+  <section id="v-login" class="card" hidden>
+    <form id="f-login">
+      <label class="field" for="i-password">共用密碼</label>
+      <input id="i-password" type="password" autocomplete="current-password" required maxlength="200">
+      <button type="submit">登入</button>
+    </form>
+  </section>
+
+  <!-- 老師資料 -->
+  <section id="v-profile" class="card" hidden>
+    <form id="f-profile">
+      <h2>你的資料</h2>
+      <label class="field" for="i-name">姓名</label>
+      <input id="i-name" type="text" autocomplete="name" required maxlength="20">
+      <label class="field" for="i-email">Google 信箱</label>
+      <input id="i-email" type="email" autocomplete="email" required maxlength="100">
+      <p class="hint">問卷建好後會把這個信箱加為表單的編輯者，你才看得到 Google 表單的回覆統計；「我的問卷」也是用它來找。這台瀏覽器會記住，下次不用再填。</p>
+      <button type="submit">繼續</button>
+    </form>
+  </section>
+
+  <!-- 主畫面 -->
+  <section id="v-app" hidden>
+    <p class="who"><span id="who"></span>　<button class="link" id="b-profile" type="button">更改資料</button>　<button class="link" id="b-logout" type="button">登出</button></p>
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" id="tab-create" aria-controls="t-create" aria-selected="true">產生問卷</button>
+      <button type="button" role="tab" id="tab-list" aria-controls="t-list" aria-selected="false">我的問卷與分析</button>
+    </div>
+
+    <div id="t-create" role="tabpanel" aria-labelledby="tab-create">
+      <div class="card" id="c-upload">
+        <h2>1. 上傳課表</h2>
+        <p>進入 TIS／導師作業／1.開班計劃表作業／[課程表列印]，全選並貼上 Excel，再上傳該 Excel。</p>
+        <p class="hint">貼上後的樣子可以對照<a href="課表範本.xlsx" download>課表範本（Excel）</a>。</p>
+        <label class="field" for="i-file">課表檔（.xlsx，1 MB 以內）</label>
+        <input id="i-file" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+        <button type="button" id="b-parse">讀取課表</button>
+      </div>
+
+      <div class="card" id="c-preview" hidden>
+        <h2>2. 確認讀到的課表</h2>
+        <p id="p-title" class="meta"></p>
+        <div class="scroll"><table><thead><tr><th scope="col">日期</th><th scope="col">課程</th><th scope="col">講師</th></tr></thead>
+          <tbody id="p-lessons"></tbody></table></div>
+        <fieldset id="p-days-box" class="days">
+          <legend>這份問卷要問哪幾天？</legend>
+          <div id="p-days"></div>
+          <p class="hint">全勾＝一次問完。只勾前幾天＝中段問卷（不問課前課後自評與推薦題，留給收尾那一份）。</p>
+        </fieldset>
+        <p class="hint">問卷建好就不會刪除；課表有錯請改好 Excel 重新上傳，不要先建。</p>
+        <button type="button" id="b-create">建立問卷</button>
+      </div>
+
+      <div class="card warn" id="c-dup" hidden role="alert">
+        <p><strong>這一班、這幾天你已經建立過問卷了</strong>（<span id="d-at"></span>）。</p>
+        <p class="linkline">填答連結：<a id="d-view" target="_blank" rel="noopener"></a></p>
+        <div class="row">
+          <button type="button" class="ghost" id="b-dup-cancel">不用了，用原本那份</button>
+          <button type="button" id="b-dup-confirm">仍要再建一份</button>
+        </div>
+      </div>
+
+      <div class="card" id="c-result" hidden>
+        <div class="okbox">✅ 問卷建立完成：<strong id="r-title"></strong></div>
+        <p class="linkline">填答連結（給學員）：<a id="r-view" target="_blank" rel="noopener"></a></p>
+        <p class="linkline">編輯連結（看回覆統計）：<a id="r-edit" target="_blank" rel="noopener"></a></p>
+        <img id="r-qr" class="qr" alt="問卷填答連結的 QR code">
+        <div class="row"><button type="button" class="ghost" id="b-qr">下載 QR code 圖片</button>
+          <button type="button" class="ghost" id="b-copy-url">複製填答連結</button></div>
+        <p id="r-warn" class="warn" hidden></p>
+        <h2 style="margin-top:18px">通知學員填問卷的信</h2>
+        <label class="field" for="r-subject">主旨</label>
+        <input id="r-subject" type="text" readonly>
+        <label class="field" for="r-body">內文</label>
+        <textarea id="r-body" readonly></textarea>
+        <div class="row"><button type="button" class="ghost" id="b-copy-subject">複製主旨</button>
+          <button type="button" class="ghost" id="b-copy-body">複製內文</button></div>
+        <p class="hint">信件請自己寄出；這裡只產生草稿。</p>
+        <button type="button" class="ghost" id="b-again">再建一份（換課表或換天數）</button>
+      </div>
+    </div>
+
+    <div id="t-list" role="tabpanel" aria-labelledby="tab-list" hidden>
+      <button type="button" class="ghost" id="b-refresh" style="margin:0 0 12px">重新整理</button>
+      <div id="l-items"></div>
+    </div>
+  </section>
+
+  <footer>工作台雲端版</footer>
+</main>
+
+<script src="vendor/qrcode-generator-1.4.4.js"></script>
+<script>
+'use strict';
+// 部署後把 Apps Script 網頁應用程式網址填在這裡；本機開發（localhost）一律走模擬後台 /api
+const DEPLOYED_API_URL = 'https://script.google.com/macros/s/AKfycbwgNaBslCjgLMWSf3_toOPEqxzsNRX31skaT0FsmrW7541wa9ySYV4cN-vM3ioN1G9R/exec';
+const API_URL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? '/api' : DEPLOYED_API_URL;
+const MAX_FILE = 1024 * 1024, MAX_ROWS = 200;
+const RELOGIN = ['請重新登入', '登入已逾時，請重新登入'];
+
+const $ = id => document.getElementById(id);
+const store = {   // 私密瀏覽或封鎖網站資料時，讀寫可能丟例外；一律包起來，頁面照常運作
+  get(area, k) { try { return window[area].getItem(k); } catch (e) { return null; } },
+  set(area, k, v) { try { v == null ? window[area].removeItem(k) : window[area].setItem(k, v); } catch (e) {} },
+};
+let token = store.get('sessionStorage', 'cloudToken');
+let profile = JSON.parse(store.get('localStorage', 'cloudProfile') || 'null');
+let lastTable = null, lastResult = null;
+
+function say(text, kind) { const m = $('msg'); m.textContent = text || ''; m.className = kind || ''; }
+function show(view) { ['v-unset', 'v-login', 'v-profile', 'v-app'].forEach(v => { $(v).hidden = v !== view; }); }
+
+/** 送到後台。按鈕在處理中會停用並顯示進度，避免重複送出。 */
+async function api(action, payload, button, busyText) {
+  const label = button && button.textContent;
+  if (button) { button.disabled = true; button.textContent = busyText || '處理中…'; }
+  say('');
+  try {
+    const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(Object.assign({ action, token }, payload)) });
+    const data = await res.json();
+    if (!data.ok) {
+      if (RELOGIN.includes(data.error)) { logout(data.error); }
+      else say(data.error, 'err');
+      return null;
+    }
+    return data;
+  } catch (e) {
+    say('連不上後台，請檢查網路後再試一次', 'err');
+    return null;
+  } finally {
+    if (button) { button.disabled = false; button.textContent = label; }
+  }
+}
+
+function logout(reason) {
+  token = null; store.set('sessionStorage', 'cloudToken', null);
+  show('v-login'); say(reason || '', reason ? 'err' : '');
+  $('i-password').focus();
+}
+
+function enterApp() {
+  if (!profile) { show('v-profile'); $('i-name').focus(); return; }
+  $('who').textContent = profile.name + '（' + profile.email + '）';
+  show('v-app');
+}
+
+function copy(text, what) {
+  const done = () => say('已複製' + what, 'ok');
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(done, () => say('複製失敗，請手動選取複製', 'err'));
+  } else {
+    const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select();
+    try { document.execCommand('copy'); done(); } catch (e) { say('複製失敗，請手動選取複製', 'err'); }
+    t.remove();
+  }
+}
+
+function el(tag, attrs, ...kids) {   // 一律用 textContent 放使用者資料，不用 innerHTML
+  const n = document.createElement(tag);
+  Object.entries(attrs || {}).forEach(([k, v]) => {
+    if (k === 'text') n.textContent = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else if (v !== false && v != null) n.setAttribute(k, v === true ? '' : v);
+  });
+  kids.flat().forEach(k => k != null && n.append(k));
+  return n;
+}
+
+// ══════════════════════════════════════════════════════════════
+// 讀 Excel（.xlsx＝zip 裡的 XML）：只取第一個工作表、每格轉成文字
+// ══════════════════════════════════════════════════════════════
+const NOT_XLSX = '讀不到這個檔案，請確認是 Excel 的 .xlsx 檔（舊版 .xls 請另存成 .xlsx）';
+const TOO_BIG = '這個檔案解開後太大了，請只保留課表的部分再上傳';
+const MAX_UNZIPPED = 20 * 1024 * 1024;
+
+async function unzip(buf) {
+  const dv = new DataView(buf);
+  let eocd = -1;
+  for (let i = buf.byteLength - 22; i >= Math.max(0, buf.byteLength - 65557); i--) {
+    if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  }
+  if (eocd < 0) throw new Error(NOT_XLSX);
+  const entries = {};
+  let p = dv.getUint32(eocd + 16, true);
+  for (let n = dv.getUint16(eocd + 10, true); n > 0; n--) {
+    if (p + 46 > buf.byteLength || dv.getUint32(p, true) !== 0x02014b50) throw new Error(NOT_XLSX);
+    const nlen = dv.getUint16(p + 28, true);
+    const name = new TextDecoder().decode(new Uint8Array(buf, p + 46, nlen));
+    entries[name] = { method: dv.getUint16(p + 10, true), size: dv.getUint32(p + 20, true), off: dv.getUint32(p + 42, true) };
+    p += 46 + nlen + dv.getUint16(p + 30, true) + dv.getUint16(p + 32, true);
+  }
+  return async name => {
+    const e = entries[name];
+    if (!e) return null;
+    const start = e.off + 30 + dv.getUint16(e.off + 26, true) + dv.getUint16(e.off + 28, true);
+    const data = new Uint8Array(buf, start, e.size);
+    if (e.method === 0) return new TextDecoder().decode(data);
+    if (e.method !== 8) throw new Error(NOT_XLSX);
+    // 邊解壓邊計量：惡意的壓縮炸彈（1 MB 解出幾百 MB）在超過上限時就停，不讓分頁當掉
+    const reader = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw')).getReader();
+    const chunks = [];
+    for (let total = 0; ;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.length;
+      if (total > MAX_UNZIPPED) { reader.cancel(); throw new Error(TOO_BIG); }
+      chunks.push(value);
+    }
+    return new TextDecoder().decode(await new Blob(chunks).arrayBuffer());
+  };
+}
+
+function xml(text) {
+  const doc = new DOMParser().parseFromString(text, 'application/xml');
+  if (doc.getElementsByTagName('parsererror').length) throw new Error(NOT_XLSX);
+  return doc;
+}
+
+const colIndex = ref => [...ref.replace(/\d+$/, '')].reduce((n, ch) => n * 26 + ch.charCodeAt(0) - 64, 0) - 1;
+
+/** 數字格轉文字：「時間」的開始／結束兩欄（D、E）的時間序號轉成「9:10」，其他欄整數不帶小數點。 */
+function numText(v, col) {
+  const n = Number(v);
+  if (!isFinite(n)) return String(v);
+  if ((col === 3 || col === 4) && n > 0 && n - Math.floor(n) > 0) {
+    const mins = Math.round((n - Math.floor(n)) * 1440);
+    return Math.floor(mins / 60) + ':' + String(mins % 60).padStart(2, '0');
+  }
+  return Number.isInteger(n) ? String(n) : String(+n.toFixed(6));
+}
+
+async function readXlsx(file) {
+  const get = await unzip(await file.arrayBuffer());
+  const wbText = await get('xl/workbook.xml'), relText = await get('xl/_rels/workbook.xml.rels');
+  if (!wbText || !relText) throw new Error(NOT_XLSX);
+  const first = xml(wbText).getElementsByTagName('sheet')[0];
+  if (!first) throw new Error(NOT_XLSX);
+  const rid = first.getAttribute('r:id');
+  const rel = [...xml(relText).getElementsByTagName('Relationship')].find(r => r.getAttribute('Id') === rid);
+  if (!rel) throw new Error(NOT_XLSX);
+  const target = rel.getAttribute('Target').replace(/^\/?(xl\/)?/, 'xl/');
+  const sheetText = await get(target);
+  if (!sheetText) throw new Error(NOT_XLSX);
+
+  const sstText = await get('xl/sharedStrings.xml');
+  const sst = sstText ? [...xml(sstText).getElementsByTagName('si')].map(si =>
+    [...si.getElementsByTagName('t')].filter(t => t.parentNode.nodeName !== 'rPh').map(t => t.textContent).join('')) : [];
+
+  const rows = [];
+  let rowNo = 0;
+  for (const r of xml(sheetText).getElementsByTagName('row')) {
+    rowNo = Number(r.getAttribute('r')) || rowNo + 1;
+    if (rowNo > MAX_ROWS) break;
+    const out = [];
+    let col = -1;
+    for (const c of r.getElementsByTagName('c')) {
+      col = c.getAttribute('r') ? colIndex(c.getAttribute('r')) : col + 1;
+      if (col > 25) continue;
+      const t = c.getAttribute('t'), v = c.getElementsByTagName('v')[0];
+      let text = '';
+      if (t === 's') text = sst[Number(v && v.textContent)] || '';
+      else if (t === 'inlineStr') text = [...c.getElementsByTagName('t')].map(x => x.textContent).join('');
+      else if (t === 'b') text = v && v.textContent === '1' ? 'TRUE' : 'FALSE';
+      else if (v) text = (t === 'str' || t === 'e') ? v.textContent : numText(v.textContent, col);
+      out[col] = text;
+    }
+    rows[rowNo - 1] = Array.from(out, x => x || '');
+  }
+  const table = Array.from(rows, x => x || []);
+  while (table.length && table[table.length - 1].every(x => !String(x).trim())) table.pop();
+  return table;
+}
+
+// ══════════════════════════════════════════════════════════════
+// 產生問卷
+// ══════════════════════════════════════════════════════════════
+$('b-parse').addEventListener('click', async () => {
+  const file = $('i-file').files[0];
+  $('c-preview').hidden = $('c-result').hidden = $('c-dup').hidden = true;
+  if (!file) { say('請先選擇課表檔', 'err'); return; }
+  if (file.size > MAX_FILE) { say('檔案超過 1 MB，請只保留課表的部分', 'err'); return; }
+  const b = $('b-parse');
+  b.disabled = true; b.textContent = '讀取中…';
+  try { lastTable = await readXlsx(file); }
+  catch (e) { say(e.message === TOO_BIG ? TOO_BIG : NOT_XLSX, 'err'); return; }   // 其他例外（壞檔、越界）一律同一句中文
+  finally { b.disabled = false; b.textContent = '讀取課表'; }
+
+  const data = await api('parse', { table: lastTable }, b, '檢查課表中…');
+  if (!data) return;
+  $('p-title').textContent = data.classTitle + (data.classroom ? '｜教室 ' + data.classroom : '');
+  $('p-lessons').replaceChildren(...data.lessons.map(l =>
+    el('tr', null, el('td', { text: l.day }), el('td', { text: l.course }), el('td', { text: l.teacher }))));
+  $('p-days').replaceChildren(...data.days.map(d =>
+    el('label', null, el('input', { type: 'checkbox', value: d, checked: true }), d)));
+  $('p-days-box').hidden = data.days.length < 2;
+  $('c-preview').hidden = false;
+  $('c-preview').scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+
+async function createForm(confirmDuplicate, button) {
+  const days = [...$('p-days').querySelectorAll('input:checked')].map(i => i.value);
+  if (!$('p-days-box').hidden && !days.length) { say('至少要勾一天', 'err'); return; }
+  const data = await api('create', { table: lastTable, days, name: profile.name, email: profile.email, confirmDuplicate },
+                         button, '建立問卷中（約 10–20 秒）…');
+  if (!data) return;
+  if (data.duplicate) {
+    $('d-at').textContent = data.existing.createdAt;
+    $('d-view').textContent = $('d-view').href = data.existing.viewUrl;
+    $('c-dup').hidden = false;
+    return;
+  }
+  lastResult = data;
+  $('c-dup').hidden = $('c-preview').hidden = $('c-upload').hidden = true;
+  $('r-title').textContent = data.title;
+  $('r-view').textContent = $('r-view').href = data.viewUrl;
+  $('r-edit').textContent = $('r-edit').href = data.editUrl;
+  $('r-subject').value = data.subject;
+  $('r-body').value = data.body;
+  $('r-warn').textContent = data.editorWarning || '';
+  $('r-warn').hidden = !data.editorWarning;
+  $('r-qr').src = qrCanvas(data.viewUrl).toDataURL('image/png');
+  $('c-result').hidden = false;
+  say('問卷建立完成', 'ok');
+  $('c-result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function qrCanvas(text) {
+  const qr = qrcode(0, 'M'); qr.addData(text); qr.make();
+  const n = qr.getModuleCount(), cell = 10, margin = 4, size = (n + margin * 2) * cell;
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const g = c.getContext('2d');
+  g.fillStyle = '#fff'; g.fillRect(0, 0, size, size); g.fillStyle = '#000';
+  for (let r = 0; r < n; r++) for (let k = 0; k < n; k++) if (qr.isDark(r, k)) g.fillRect((k + margin) * cell, (r + margin) * cell, cell, cell);
+  return c;
+}
+
+function saveFile(blob, name) {
+  const a = el('a', { href: URL.createObjectURL(blob), download: name });
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+}
+
+$('b-create').addEventListener('click', e => createForm(false, e.currentTarget));
+$('b-dup-confirm').addEventListener('click', e => createForm(true, e.currentTarget));
+$('b-dup-cancel').addEventListener('click', () => { $('c-dup').hidden = true; say('沒有建立新的問卷'); });
+$('b-qr').addEventListener('click', () => qrCanvas(lastResult.viewUrl).toBlob(b => saveFile(b, '問卷QR_' + lastResult.title.split(' ')[0] + '.png')));
+$('b-copy-url').addEventListener('click', () => copy(lastResult.viewUrl, '填答連結'));
+$('b-copy-subject').addEventListener('click', () => copy($('r-subject').value, '主旨'));
+$('b-copy-body').addEventListener('click', () => copy($('r-body').value, '內文'));
+$('b-again').addEventListener('click', () => {
+  $('c-result').hidden = true; $('c-upload').hidden = false; $('i-file').value = ''; say('');
+});
+
+// ══════════════════════════════════════════════════════════════
+// 我的問卷與分析
+// ══════════════════════════════════════════════════════════════
+const STATUS_TEXT = {
+  '排隊中': '⏳ 排隊中——報告由 LOLO 老師的電腦處理，通常幾分鐘，電腦未開機時會順延',
+  '處理中': '⏳ 處理中——AI 正在撰寫報告，通常 1–3 分鐘',
+  '已完成': '✅ 報告已完成', '失敗': '❌ 沒有產生報告',
+};
+
+function requestForm(f) {
+  const id = 'q-' + f.formId;
+  const att = el('input', { type: 'number', id: id + '-att', min: 1, max: 1000, required: true, inputmode: 'numeric' });
+  const unit = el('input', { type: 'text', id: id + '-unit', maxlength: 50 });
+  const obs = el('textarea', { id: id + '-obs', maxlength: 2000 });
+  const btn = el('button', { type: 'submit', text: '送出分析申請' });
+  return el('form', { onsubmit: async e => {
+      e.preventDefault();
+      const data = await api('submit', { email: profile.email, formId: f.formId, attendees: Number(att.value),
+        needUnit: unit.value, observation: obs.value }, btn, '送出中…');
+      if (data) {   // 先重整清單再顯示訊息（重整會清掉訊息列）
+        await loadList();
+        say('已送出申請（回收 ' + data.returned + ' 份），報告完成後會出現在這裡；可按「重新整理」查看進度', 'ok');
+      }
+    } },
+    el('label', { class: 'field', for: id + '-att', text: '參訓人數（必填，回收率的分母）' }), att,
+    el('label', { class: 'field', for: id + '-unit', text: '需求單位（會放進學習成效通知信）' }), unit,
+    el('label', { class: 'field', for: id + '-obs', text: '導師觀察意見（留空就不放這一章）' }), obs,
+    el('p', { class: 'hint', text: '課程目的由 AI 依課表自動撰寫，報告下載後可自行修改。' }), btn);
+}
+
+function formCard(f) {
+  const req = f.request, busy = req && (req.status === '排隊中' || req.status === '處理中');
+  const parts = [
+    el('h2', { text: f.classTitle }),
+    el('p', { class: 'meta', text: (f.days ? '上課日：' + f.days : '全部上課日') + '｜建立於 ' + f.createdAt }),
+    el('p', { class: 'linkline' }, '填答連結：', el('a', { href: f.viewUrl, target: '_blank', rel: 'noopener', text: f.viewUrl })),
+    el('p', { class: 'linkline' }, el('a', { href: f.editUrl, target: '_blank', rel: 'noopener', text: '開啟表單看回覆統計' })),
+    el('details', null, el('summary', { text: '通知學員填問卷的信' }),
+      el('p', { class: 'meta', text: '主旨：' + f.subject }),
+      el('textarea', { readonly: true, 'aria-label': '通知學員填問卷的信內文', text: f.body }),
+      el('button', { type: 'button', class: 'ghost small', text: '複製內文', onclick: () => copy(f.body, '內文') })),
+  ];
+  if (req) {
+    const cls = req.status === '已完成' ? 'done' : req.status === '失敗' ? 'fail' : '';
+    parts.push(el('p', { class: 'status ' + cls, text: STATUS_TEXT[req.status] || req.status }));
+    if (req.status === '失敗' && req.reason) parts.push(el('p', { class: 'hint', text: '原因：' + req.reason }));
+    if (req.status === '已完成') {
+      const dl = el('button', { type: 'button', text: '下載學習分析報告（Word）' });
+      dl.addEventListener('click', async () => {
+        const data = await api('download', { email: profile.email, requestId: req.id }, dl, '下載中…');
+        if (!data) return;
+        const bytes = Uint8Array.from(atob(data.base64), ch => ch.charCodeAt(0));
+        saveFile(new Blob([bytes], { type: data.mimeType }), data.fileName);
+      });
+      parts.push(dl, el('details', null, el('summary', { text: '學習成效通知信（草稿）' }),
+        el('p', { class: 'meta', text: '主旨：' + req.subject }),
+        el('textarea', { readonly: true, 'aria-label': '學習成效通知信內文', text: req.body }),
+        el('div', { class: 'row' },
+          el('button', { type: 'button', class: 'ghost small', text: '複製主旨', onclick: () => copy(req.subject, '主旨') }),
+          el('button', { type: 'button', class: 'ghost small', text: '複製內文', onclick: () => copy(req.body, '內文') }))));
+    }
+  }
+  if (!busy) {
+    parts.push(req ? el('details', null, el('summary', { text: req.status === '已完成' ? '重新產生報告' : '重新申請' }), requestForm(f))
+                   : el('details', null, el('summary', { text: '申請學習分析報告' }), requestForm(f)));
+  }
+  return el('div', { class: 'card' }, parts);
+}
+
+async function loadList() {
+  const data = await api('forms', { email: profile.email }, $('b-refresh'), '讀取中…');
+  if (!data) return;
+  $('l-items').replaceChildren(...(data.forms.length ? data.forms.map(formCard)
+    : [el('p', { class: 'hint', text: '還沒有用這個信箱建立過問卷。' })]));
+}
+
+function selectTab(which) {
+  const create = which === 'create';
+  $('tab-create').setAttribute('aria-selected', String(create));
+  $('tab-list').setAttribute('aria-selected', String(!create));
+  $('t-create').hidden = !create; $('t-list').hidden = create;
+  say('');
+  if (!create) loadList();
+}
+$('tab-create').addEventListener('click', () => selectTab('create'));
+$('tab-list').addEventListener('click', () => selectTab('list'));
+$('b-refresh').addEventListener('click', loadList);
+
+// ══════════════════════════════════════════════════════════════
+// 登入與老師資料
+// ══════════════════════════════════════════════════════════════
+$('f-login').addEventListener('submit', async e => {
+  e.preventDefault();
+  const data = await api('login', { password: $('i-password').value }, e.submitter, '確認中…');
+  if (!data) return;
+  token = data.token; store.set('sessionStorage', 'cloudToken', token);
+  $('i-password').value = '';
+  enterApp();
+});
+
+$('f-profile').addEventListener('submit', e => {
+  e.preventDefault();
+  profile = { name: $('i-name').value.trim(), email: $('i-email').value.trim().toLowerCase() };
+  store.set('localStorage', 'cloudProfile', JSON.stringify(profile));
+  enterApp();
+});
+
+$('b-profile').addEventListener('click', () => {
+  $('i-name').value = profile ? profile.name : ''; $('i-email').value = profile ? profile.email : '';
+  profile = null; enterApp();
+});
+$('b-logout').addEventListener('click', () => logout('已登出'));
+
+$('dev-banner').hidden = API_URL !== '/api';
+if (!API_URL) show('v-unset');
+else if (!token) logout();
+else enterApp();
+</script>
+</body>
+</html>
