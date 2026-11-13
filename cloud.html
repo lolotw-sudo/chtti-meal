@@ -171,6 +171,7 @@ if (!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
   details.class-group[open] > summary .class-title::before { content:'▾ '; }
   details.class-group > .form-card { margin:10px 0 0 14px; }
   .old-report { margin-top:10px; }
+  details.schedule { margin-top:0; border-top:0; padding-top:0; }
   .list-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; }
   .empty { text-align:center; padding:36px 16px; }
   footer { margin-top:40px; font-size:.8rem; color:var(--muted); text-align:center; }
@@ -752,10 +753,24 @@ function classGroups(forms) {
     if (!groups.has(key)) groups.set(key, { key, title: f.classTitle, forms: [], last: '' });
     const g = groups.get(key);
     g.forms.push(f);
+    if (!g.schedule && f.schedule && f.schedule.courses.length) g.schedule = f.schedule;   // 用最新那份問卷的課表
     [f.createdAt, ...reqsOf(f).flatMap(q => [q.requestedAt, q.completedAt])]
       .forEach(t => { if (t && t > g.last) g.last = t; });
   });
   return [...groups.values()].sort((a, b) => b.last.localeCompare(a.last));
+}
+
+const dayText = c => c.weekday ? c.date + '（' + c.weekday + '）' : c.date;   // 與 fetch_schedule() 同一個格式
+
+function scheduleCard(s) {   // 展開班級後最上方的完整課表（可收合）；沿用全站表格樣式，手機上一堂課一塊，與上傳時的預覽一致
+  const days = [...new Set(s.courses.map(dayText))];
+  const head = el('tr', {}, ['日期', '時間', '課程', '講師'].map(t => el('th', { scope: 'col', text: t })));
+  const rows = s.courses.map(c => el('tr', {},
+    el('td', { text: dayText(c) }), el('td', { text: c.start && c.end ? c.start + '–' + c.end : (c.start || c.end) }),
+    el('td', { text: c.name }), el('td', { text: c.teacher })));
+  return el('div', { class: 'card form-card' },
+    el('details', { class: 'more schedule' }, el('summary', { text: '課表（' + days.length + ' 天、' + s.courses.length + ' 堂）' }),
+      el('table', {}, el('thead', {}, head), el('tbody', {}, rows))));
 }
 
 function classGroup(g, i) {
@@ -765,8 +780,11 @@ function classGroup(g, i) {
       ontoggle: e => { e.target.open ? openGroups.add(g.key) : openGroups.delete(g.key); } },
     el('summary', {},
       el('span', { class: 'class-title', text: g.title }),
+      g.schedule ? el('span', { class: 'meta', text: '上課日：' + dayText(g.schedule.courses[0])
+        + (g.schedule.courses.length > 1 && dayText(g.schedule.courses.at(-1)) !== dayText(g.schedule.courses[0]) ? '～' + dayText(g.schedule.courses.at(-1)) : '')
+        + (g.schedule.classroom ? '・教室 ' + g.schedule.classroom : '') }) : null,
       el('span', { class: 'meta', text: '問卷 ' + g.forms.length + ' 份｜報告 ' + reports + ' 份｜最近活動 ' + md(g.last) })),
-    g.forms.map(formCard));
+    g.schedule ? scheduleCard(g.schedule) : null, g.forms.map(formCard));
 }
 
 async function loadList() {
