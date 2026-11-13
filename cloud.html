@@ -162,6 +162,15 @@ if (!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
   .chip.fail { background:var(--err-bg); border-color:var(--err); color:var(--err); }
   .chip.wait { background:var(--warn-bg); border-color:var(--warn-line); color:var(--warn-fg); }
   .form-card h2 { font-size:1.08rem; }
+  details.class-group { margin-bottom:14px; }
+  details.class-group > summary { cursor:pointer; list-style:none; display:flex; flex-direction:column; gap:2px;
+    padding:14px 18px; border:1px solid var(--line); border-radius:14px; background:var(--surface); min-height:44px; }
+  details.class-group > summary::-webkit-details-marker { display:none; }
+  details.class-group > summary .class-title { font-family:var(--serif); font-weight:700; }
+  details.class-group > summary .class-title::before { content:'▸ '; color:var(--primary); }
+  details.class-group[open] > summary .class-title::before { content:'▾ '; }
+  details.class-group > .form-card { margin:10px 0 0 14px; }
+  .old-report { margin-top:10px; }
   .list-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; }
   .empty { text-align:center; padding:36px 16px; }
   footer { margin-top:40px; font-size:.8rem; color:var(--muted); text-align:center; }
@@ -248,7 +257,7 @@ if (!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
       <input id="i-name" type="text" autocomplete="name" required maxlength="20">
       <label class="field" for="i-email">Google 信箱</label>
       <input id="i-email" type="email" autocomplete="email" required maxlength="100">
-      <p class="hint">問卷建好後會把這個信箱加為表單編輯者，你才看得到回覆統計；「我的問卷」也用它來找。</p>
+      <p class="hint">問卷建好後會把這個信箱加為表單編輯者，你才看得到回覆統計；「我的開班歷程」也用它來找。</p>
       <button type="submit">繼續</button>
     </form>
   </section>
@@ -257,7 +266,7 @@ if (!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
   <section id="v-app" class="narrow" hidden>
     <div class="tabs" role="tablist">
       <button type="button" role="tab" id="tab-create" aria-controls="t-create" aria-selected="true">產生問卷</button>
-      <button type="button" role="tab" id="tab-list" aria-controls="t-list" aria-selected="false">我的問卷與分析</button>
+      <button type="button" role="tab" id="tab-list" aria-controls="t-list" aria-selected="false">我的開班歷程</button>
     </div>
 
     <div id="t-create" role="tabpanel" aria-labelledby="tab-create">
@@ -335,7 +344,7 @@ if (!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
 
     <div id="t-list" role="tabpanel" aria-labelledby="tab-list" hidden>
       <div class="list-head">
-        <p class="meta">課程結束、回覆收齊後，在這裡申請學習分析報告。</p>
+        <p class="meta">每個班做過的問卷與分析報告都在這裡；課程結束、回覆收齊後，也在這裡申請學習分析報告。</p>
         <button type="button" class="ghost small" id="b-refresh">重新整理</button>
       </div>
       <div id="l-items"></div>
@@ -641,7 +650,7 @@ $('b-again').addEventListener('click', () => {
 });
 
 // ══════════════════════════════════════════════════════════════
-// 我的問卷與分析
+// 我的開班歷程
 // ══════════════════════════════════════════════════════════════
 const STATUS = {
   '排隊中': ['wait', '排隊中', '報告由 LOLO 老師的電腦在每天 12:30、16:30 處理，電腦沒開機時順延到下一個時段。'],
@@ -671,15 +680,39 @@ function requestForm(f) {
     el('p', { class: 'hint', text: '課程目的由 AI 依課表自動撰寫，報告下載後可自行修改。' }), btn);
 }
 
+const reqsOf = f => f.requests || (f.request ? [f.request] : []);   // 舊版後台只回傳最新一筆
+const md = s => s ? (+s.slice(5, 7)) + '/' + (+s.slice(8, 10)) : '';   // 「2026-11-12 10:00:00」→「11/12」
+
+function reportFiles(req, label) {   // 一份已完成報告：下載 Word＋學習成效通知信草稿
+  const dl = el('button', { type: 'button', class: label ? 'ghost small' : '', text: label ? '下載 Word' : '下載學習分析報告（Word）',
+    'aria-label': label ? '下載 Word（' + label + '）' : null });
+  dl.addEventListener('click', async () => {
+    const data = await api('download', { email: profile.email, requestId: req.id }, dl, '下載中…');
+    if (!data) return;
+    const bytes = Uint8Array.from(atob(data.base64), ch => ch.charCodeAt(0));
+    saveFile(new Blob([bytes], { type: data.mimeType }), data.fileName);
+  });
+  return [dl, el('details', { class: 'more' }, el('summary', { text: '學習成效通知信（草稿）' + (label ? '－' + label : '') }),
+    el('p', { class: 'meta', text: '主旨：' + req.subject }),
+    el('textarea', { readonly: true, 'aria-label': '學習成效通知信內文' + (label ? '（' + label + '）' : ''), text: req.body }),
+    el('div', { class: 'row' },
+      el('button', { type: 'button', class: 'ghost small', text: '複製主旨', 'aria-label': label ? '複製主旨（' + label + '）' : null, onclick: () => copy(req.subject, '主旨') }),
+      el('button', { type: 'button', class: 'ghost small', text: '複製內文', 'aria-label': label ? '複製內文（' + label + '）' : null, onclick: () => copy(req.body, '內文') })))];
+}
+
 function formCard(f) {
   const req = f.request, busy = req && (req.status === '排隊中' || req.status === '處理中');
+  const qr = el('img', { alt: '填答頁 QR Code', width: 180, height: 180 });
   const parts = [
-    el('h2', { text: f.classTitle }),
+    el('h2', { text: '問卷（' + md(f.createdAt) + ' 建立）' }),
     el('p', { class: 'meta', text: (f.days ? '上課日：' + f.days : '全部上課日') + '｜建立於 ' + f.createdAt }),
     el('div', { class: 'row' },
       el('a', { class: 'btn ghost small', href: f.viewUrl, target: '_blank', rel: 'noopener', text: '開啟填答頁' }),
       el('a', { class: 'btn ghost small', href: f.editUrl, target: '_blank', rel: 'noopener', text: '看回覆統計' }),
       el('button', { type: 'button', class: 'ghost small', text: '複製填答連結', onclick: () => copy(f.viewUrl, '填答連結') })),
+    el('details', { class: 'more', ontoggle: e => { if (e.target.open && !qr.src) qr.src = qrCanvas(f.viewUrl).toDataURL('image/png'); } },
+      el('summary', { text: '填答頁 QR Code' }), qr,
+      el('p', { class: 'hint', text: '在圖上按右鍵（手機長按）可以另存圖片。' })),
     el('details', { class: 'more' }, el('summary', { text: '通知學員填問卷的信' }),
       el('p', { class: 'meta', text: '主旨：' + f.subject }),
       el('textarea', { readonly: true, 'aria-label': '通知學員填問卷的信內文', text: f.body }),
@@ -693,21 +726,15 @@ function formCard(f) {
     if (note) box.append(el('p', { class: 'hint', text: note }));
     if (req.status === '失敗' && req.reason) box.append(el('p', { class: 'hint', text: '原因：' + req.reason }));
     parts.push(box);
-    if (req.status === '已完成') {
-      const dl = el('button', { type: 'button', text: '下載學習分析報告（Word）' });
-      dl.addEventListener('click', async () => {
-        const data = await api('download', { email: profile.email, requestId: req.id }, dl, '下載中…');
-        if (!data) return;
-        const bytes = Uint8Array.from(atob(data.base64), ch => ch.charCodeAt(0));
-        saveFile(new Blob([bytes], { type: data.mimeType }), data.fileName);
-      });
-      parts.push(dl, el('details', { class: 'more' }, el('summary', { text: '學習成效通知信（草稿）' }),
-        el('p', { class: 'meta', text: '主旨：' + req.subject }),
-        el('textarea', { readonly: true, 'aria-label': '學習成效通知信內文', text: req.body }),
-        el('div', { class: 'row' },
-          el('button', { type: 'button', class: 'ghost small', text: '複製主旨', onclick: () => copy(req.subject, '主旨') }),
-          el('button', { type: 'button', class: 'ghost small', text: '複製內文', onclick: () => copy(req.body, '內文') }))));
-    }
+    if (req.status === '已完成') parts.push(...reportFiles(req));
+  }
+  const older = reqsOf(f).slice(1).filter(q => q.status === '已完成');   // 重新產生前的舊版報告
+  if (older.length) {
+    parts.push(el('details', { class: 'more' }, el('summary', { text: '舊版報告（' + older.length + ' 份）' }),
+      older.map(q => {
+        const label = '舊版 ' + md(q.completedAt || q.requestedAt);
+        return el('div', { class: 'old-report' }, el('p', { class: 'meta', text: label + '｜' + (q.fileName || '') }), reportFiles(q, label));
+      })));
   }
   if (!busy) {
     parts.push(el('details', { class: 'more', open: !req }, el('summary', { text: req ? (req.status === '已完成' ? '重新產生報告' : '重新申請') : '申請學習分析報告' }), requestForm(f)));
@@ -715,10 +742,38 @@ function formCard(f) {
   return el('div', { class: 'card form-card' }, parts);
 }
 
+// 我的開班歷程：同一個班代號的問卷收在一起，最近有動作的班排最上面
+const openGroups = new Set();   // 重新整理清單後，維持老師原本展開的班
+
+function classGroups(forms) {
+  const groups = new Map();
+  forms.forEach(f => {   // 後台已依建立時間新的在前
+    const key = f.code || f.classTitle;
+    if (!groups.has(key)) groups.set(key, { key, title: f.classTitle, forms: [], last: '' });
+    const g = groups.get(key);
+    g.forms.push(f);
+    [f.createdAt, ...reqsOf(f).flatMap(q => [q.requestedAt, q.completedAt])]
+      .forEach(t => { if (t && t > g.last) g.last = t; });
+  });
+  return [...groups.values()].sort((a, b) => b.last.localeCompare(a.last));
+}
+
+function classGroup(g, i) {
+  const reports = g.forms.reduce((n, f) => n + reqsOf(f).filter(q => q.status === '已完成').length, 0);
+  if (!openGroups.size && i === 0) openGroups.add(g.key);   // 沒有展開中的班：展開最近的那一班
+  return el('details', { class: 'class-group', open: openGroups.has(g.key),
+      ontoggle: e => { e.target.open ? openGroups.add(g.key) : openGroups.delete(g.key); } },
+    el('summary', {},
+      el('span', { class: 'class-title', text: g.title }),
+      el('span', { class: 'meta', text: '問卷 ' + g.forms.length + ' 份｜報告 ' + reports + ' 份｜最近活動 ' + md(g.last) })),
+    g.forms.map(formCard));
+}
+
 async function loadList() {
   const data = await api('forms', { email: profile.email }, $('b-refresh'), '讀取中…');
   if (!data) return;
-  $('l-items').replaceChildren(...(data.forms.length ? data.forms.map(formCard)
+  const groups = classGroups(data.forms);
+  $('l-items').replaceChildren(...(groups.length ? groups.map(classGroup)
     : [el('div', { class: 'card empty' }, el('h2', { text: '還沒有問卷' }),
         el('p', { class: 'hint', text: '用這個信箱建立的問卷會列在這裡。' }),
         el('button', { type: 'button', class: 'small', style: 'margin-top:14px', text: '去產生第一份問卷', onclick: () => selectTab('create') }))]));
