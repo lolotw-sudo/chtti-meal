@@ -134,9 +134,26 @@ if (!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
   .status .chip { font-size:.8rem; padding:2px 10px; }
   .class-row button { width:auto; margin:0; flex:none; }
   @media (max-width:600px) { .class-row { flex-direction:column; align-items:stretch; } .class-row button { width:100%; } }
+  #t-class { max-width:960px; margin:0 auto; }   /* 比一般頁寬：定稿問卷與報告要並排 */
   .class-head { margin-bottom:8px; }
   .class-head .class-name { font-size:1.45rem; }
-  .fn-title { font-family:var(--serif); font-size:1.12rem; margin:26px 0 10px; }
+  /* 班級頁的功能列：左邊名稱＋狀態，右邊「查看」與「產生」 */
+  .fn-row { margin-top:12px; border:1px solid var(--line); border-radius:14px; background:var(--surface); box-shadow:var(--shadow); }
+  .fn-head { display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:14px 18px; }
+  .fn-info { flex:1; min-width:160px; }
+  .fn-info h2 { font-family:var(--serif); font-size:1.12rem; }
+  .fn-head button.small:not(.ghost) { min-width:110px; }
+  .fn-body { padding:0 18px 18px; border-top:1px solid var(--line); }
+  .fn-body > :first-child { margin-top:16px; }
+  .fn-body .card { box-shadow:none; }
+  .gen h3 { font-family:var(--serif); font-size:1.02rem; margin-bottom:8px; }
+  .fn-row.sub { box-shadow:none; background:var(--bg); }
+  .fn-row.sub h3 { font-family:var(--serif); font-size:1.02rem; }
+  /* 一段問卷：左定稿問卷、右它的報告；窄螢幕上下排 */
+  .pair { display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start; }
+  .pair h4 { font-size:.9rem; color:var(--muted); margin:0 0 8px; }
+  .pair .card { margin-bottom:10px; }
+  @media (max-width:700px) { .pair { grid-template-columns:1fr; } }
   .stepper { display:flex; gap:8px; list-style:none; padding:0; margin:0 0 16px; counter-reset:st; }
   .stepper li { flex:1; counter-increment:st; font-size:.88rem; color:var(--muted); font-weight:600;
                 border-top:4px solid var(--line); padding-top:8px; }
@@ -293,7 +310,7 @@ if (!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
     </div>
 
     <!-- 單一班級頁：依功能整理（課表／用餐調查／學習問卷／分析報告） -->
-    <div id="t-class" class="narrow" hidden>
+    <div id="t-class" hidden>
       <button type="button" class="link back" id="b-class-home">← 回我的班級</button>
       <div id="c-class"></div>
     </div>
@@ -472,7 +489,7 @@ function el(tag, attrs, ...kids) {   // 一律用 textContent 放使用者資料
     else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
     else if (v !== false && v != null) n.setAttribute(k, v === true ? '' : v);
   });
-  kids.flat().forEach(k => k != null && n.append(k));
+  kids.flat(Infinity).forEach(k => k != null && n.append(k));
   return n;
 }
 
@@ -732,8 +749,7 @@ function reportFiles(req, label) {   // 一份已完成報告：下載 Word＋�
       el('button', { type: 'button', class: 'ghost small', text: '複製內文', 'aria-label': label ? '複製內文（' + label + '）' : null, onclick: () => copy(req.body, '內文') })))];
 }
 
-function formCard(f) {
-  const req = f.request, busy = req && (req.status === '排隊中' || req.status === '處理中');
+function formCard(f) {   // 一份問卷：填答連結、QR、通知信（申請分析在「分析報告」那一列）
   const qr = el('img', { alt: '填答頁 QR Code', width: 180, height: 180 });
   const parts = [
     el('h2', { text: '問卷（' + md(f.createdAt) + ' 建立）' }),
@@ -752,19 +768,10 @@ function formCard(f) {
         el('button', { type: 'button', class: 'ghost small', text: '複製主旨', onclick: () => copy(f.subject, '主旨') }),
         el('button', { type: 'button', class: 'ghost small', text: '複製內文', onclick: () => copy(f.body, '內文') }))),
   ];
-  if (req) {   // 完成的報告列在「分析報告」區；這裡只提示申請進度
-    const [cls, label, note] = STATUS[req.status] || ['', req.status, ''];
-    const box = el('div', { class: 'more', style: 'margin-top:14px' }, el('span', { class: 'chip ' + cls, text: '分析報告：' + label }));
-    if (req.status === '已完成') box.append(el('p', { class: 'hint', text: '報告在下方「分析報告」。' }));
-    if (note) box.append(el('p', { class: 'hint', text: note }));
-    if (req.status === '失敗' && req.reason) box.append(el('p', { class: 'hint', text: '原因：' + req.reason }));
-    parts.push(box);
-  }
-  if (!busy) {
-    parts.push(el('details', { class: 'more' }, el('summary', { text: req ? (req.status === '已完成' ? '重新產生報告' : '重新申請') : '申請學習分析報告' }), requestForm(f)));
-  }
   return el('div', { class: 'card form-card' }, parts);
 }
+
+const isBusy = q => q && (q.status === '排隊中' || q.status === '處理中');
 
 // 我的班級：同一個班代號的問卷收在一起，最近有動作的班排最上面
 
@@ -783,6 +790,8 @@ function classGroups(forms, meals) {
     if (!groups.has(code)) groups.set(code, { key: code, title: m.title, forms: [], last: '',
       schedule: m.schedule && m.schedule.courses.length ? m.schedule : null });
     const g = groups.get(code);
+    const newest = g.forms.length ? g.forms[0].createdAt : '';   // 用餐那份課表比最新問卷新（重新上傳過）→ 用它，與後台 storedSchedule_ 一致
+    if (m.schedule && m.schedule.courses.length && m.at > newest) g.schedule = m.schedule;
     if (m.at > g.last) g.last = m.at;
     if (m.at && (!g.first || m.at < g.first)) g.first = m.at;
   });
@@ -817,18 +826,51 @@ function isEnded(g) {
   return end ? end < today : new Date(g.last.slice(0, 10)) < new Date(today - 30 * 864e5);
 }
 
-const doneReports = g => g.forms.flatMap(f => reqsOf(f).filter(q => q.status === '已完成'))
+const doneOf = f => reqsOf(f).filter(q => q.status === '已完成')   // 這份問卷產生過的報告，新的在前
   .sort((a, b) => (b.completedAt || '').localeCompare(a.completedAt || ''));
+const classDays = g => g.schedule ? [...new Set(g.schedule.courses.map(dayText))] : [];
+const formDays = (f, g) => f.days ? f.days.split('、')
+  : f.schedule ? [...new Set(f.schedule.courses.map(dayText))] : classDays(g);   // 空白＝全部上課日
+
+// 問卷分組：問的天數有重疊＝同一份的不同版本（重跑），最新建的是定稿；完全不重疊＝不同段（分段問卷）
+function surveyGroups(g) {
+  let groups = [];
+  [...g.forms].reverse().forEach(f => {   // 由舊到新
+    const days = formDays(f, g), hit = groups.filter(x => days.some(d => x.days.has(d)));
+    const merged = { days: new Set(days), forms: [f] };
+    hit.forEach(x => { x.days.forEach(d => merged.days.add(d)); merged.forms.push(...x.forms); });
+    groups = groups.filter(x => !hit.includes(x)).concat(merged);
+  });
+  const order = classDays(g), pos = d => (order.indexOf(d) + 1) || 999;
+  groups.forEach(x => {
+    x.forms.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    x.final = x.forms[0]; x.others = x.forms.slice(1);
+    x.finalDays = formDays(x.final, g).sort((a, b) => pos(a) - pos(b));
+    x.start = Math.min(...[...x.days].map(pos));
+  });
+  return groups.sort((a, b) => a.start - b.start);
+}
+
+function groupState(x) {   // 定稿問卷的報告狀態：[標籤樣式, 文字]
+  const req = x.final.request;
+  return doneOf(x.final).length && !isBusy(req) ? ['done', '報告已完成']
+    : isBusy(req) ? ['wait', '報告處理中'] : req && req.status === '失敗' ? ['fail', '沒有產生報告']
+    : ['wait', '回覆收齊後可產生報告'];
+}
+
+function analysisStatus(g) {   // 班級整體的報告狀態（只看各段定稿）
+  const gs = surveyGroups(g), st = gs.map(groupState), done = st.filter(s => s[0] === 'done').length;
+  if (!gs.length) return ['', '要先建問卷'];
+  if (st.some(s => s[1] === '報告處理中')) return ['wait', '報告處理中'];
+  if (st.some(s => s[0] === 'fail')) return ['fail', '沒有產生報告'];
+  if (done === gs.length) return ['done', '報告已完成' + (gs.length > 1 ? '（' + done + ' 段）' : '')];
+  return ['wait', done ? '報告 ' + done + '/' + gs.length + ' 段完成' : '回覆收齊後可申請'];
+}
 
 function statusChips(g) {   // 依開班流程排：用餐調查 → 學習問卷 → 分析；done＝完成、wait＝等待中、fail＝要處理、無＝還沒做
-  const meal = myMeals[g.key] && myMeals[g.key].at, n = g.forms.length, reports = doneReports(g).length;
-  const latest = g.forms.map(f => f.request).filter(Boolean);
-  const analysis = reports ? ['done', '報告已完成' + (reports > 1 ? ' ' + reports + ' 份' : '')]
-    : latest.some(q => q.status === '排隊中' || q.status === '處理中') ? ['wait', '報告處理中']
-    : latest.some(q => q.status === '失敗') ? ['fail', '沒有產生報告']
-    : n ? ['wait', '回覆收齊後可申請'] : ['', '要先建問卷'];
+  const meal = myMeals[g.key] && myMeals[g.key].at, n = surveyGroups(g).length, analysis = analysisStatus(g);
   return [[meal ? 'done' : '', '用餐調查：' + (meal ? '已開啟' : isEnded(g) ? '沒有開' : '還沒開')],
-          [n ? 'done' : '', '學習問卷：' + (n ? '已建' + (n > 1 ? ' ' + n + ' 份' : '') : '還沒建')],
+          [n ? 'done' : '', '學習問卷：' + (n ? '已建' + (n > 1 ? ' ' + n + ' 段' : '') : '還沒建')],
           [analysis[0], '分析：' + analysis[1]]]
     .map(([cls, text]) => el('span', { class: 'chip ' + cls, text }));
 }
@@ -850,43 +892,145 @@ function classRow(g) {
     el('button', { type: 'button', text: '進入班級 ›', 'aria-label': '進入班級：' + g.title, onclick: () => showClass(g.key) }));
 }
 
-function reportsSection(g) {   // 這班所有完成的報告（含重新產生前的舊版），新的在前
-  const list = doneReports(g);
-  if (!list.length) return el('p', { class: 'hint', style: 'margin-left:14px',
-    text: '還沒有報告。回覆收齊後，在上面的問卷按「申請學習分析報告」。' });
-  return list.map(q => {
-    const label = md(q.completedAt || q.requestedAt) + ' 完成';
-    const [dl, mail] = reportFiles(q, list.length > 1 ? label : null);
-    return el('div', { class: 'card form-card' }, el('h2', { text: '分析報告（' + label + '）' }),
-      q.fileName ? el('p', { class: 'meta', text: q.fileName }) : null, dl, mail);
-  });
+function reportList(f) {   // 一份問卷的報告：最新那份攤開，舊版收合
+  const list = doneOf(f);
+  const card = (q, label) => {
+    const [dl, mail] = reportFiles(q, label);
+    return el('div', { class: 'old-report' }, el('p', { class: 'meta', text: md(q.completedAt || q.requestedAt) + ' 完成｜' + (q.fileName || '') }), dl, mail);
+  };
+  if (!list.length) return el('p', { class: 'hint', text: '還沒有報告。' });
+  return [card(list[0], null),
+    list.length > 1 ? el('details', { class: 'more' }, el('summary', { text: '舊版報告（' + (list.length - 1) + ' 份）' }),
+      list.slice(1).map(q => card(q, '舊版 ' + md(q.completedAt || q.requestedAt)))) : null];
 }
 
-function classPage(g) {   // 單一班級頁：依功能整理
-  const reports = doneReports(g).length;
+// 班級頁：課表在上，下面兩列功能。右側按鈕直接依這班課表產生（不必重新上傳），「查看」展開這列的內容
+const openRows = new Map();   // 每一列展開／收合的狀態（重新整理後維持；沒動過的用預設）
+
+function fnRow(id, title, status, action, body, defOpen, sub) {
+  const panel = el('div', { class: 'fn-body', id: 'fn-' + id.replace(/[^\w-]/g, '_') }, body);
+  const toggle = el('button', { type: 'button', class: 'ghost small', 'aria-controls': panel.id });
+  const setOpen = open => {
+    panel.hidden = !open; openRows.set(id, open);
+    toggle.setAttribute('aria-expanded', String(open)); toggle.textContent = open ? '收合 ▴' : '查看 ▾';
+  };
+  setOpen(openRows.has(id) ? openRows.get(id) : !!defOpen);
+  toggle.addEventListener('click', () => setOpen(panel.hidden));
+  const btn = action && el('button', { type: 'button', class: 'small', text: action.text, disabled: action.disabled,
+    onclick: e => { setOpen(true); action.run(e.currentTarget); } });
+  return el('section', { class: 'fn-row' + (sub ? ' sub' : ''), 'aria-label': title },
+    el('div', { class: 'fn-head' },
+      el('div', { class: 'fn-info' }, el(sub ? 'h3' : 'h2', { text: title }), el('p', { class: 'meta', text: status })), toggle, btn),
+    panel);
+}
+
+function mealRow(g) {
+  const at = myMeals[g.key] && myMeals[g.key].at, ended = isEnded(g);
+  return fnRow(g.key + ':meal', '🍱 用餐調查',
+    at ? '已開啟（' + md(at) + '）' : ended ? '這班已結束，沒有開啟' : '還沒開啟',
+    at || ended ? null : { text: '產生', run: b => enableMeal({ code: g.key }, b) },
+    mealCard(g));
+}
+
+async function createInClass(g, days, confirmDuplicate, button, out) {
+  const data = await api('create', { code: g.key, days, name: profile.name, email: profile.email, confirmDuplicate },
+                         button, '建立問卷中（約 10–20 秒）…');
+  if (!data) return;
+  if (data.duplicate) {
+    out.replaceChildren(el('div', { class: 'warn', role: 'alert' },
+      el('p', { text: '這一班、這幾天你已經建立過問卷了（' + data.existing.createdAt + '）。' }),
+      el('div', { class: 'row' },
+        el('a', { class: 'btn ghost small', href: data.existing.viewUrl, target: '_blank', rel: 'noopener', text: '開啟原本那份問卷' }),
+        el('button', { type: 'button', class: 'small', text: '仍要再建一份', onclick: e => createInClass(g, days, true, e.currentTarget, out) }))));
+    return;
+  }
+  await loadList();   // 重畫班級頁，新問卷成為那一段的定稿
+  say(data.editorWarning || '問卷建好了：它是這幾天的定稿，填答連結、QR code、通知學員的信都在「學習成效」裡', data.editorWarning ? 'err' : 'ok');
+}
+
+function formGenerator(g, covered) {   // 依這班課表產生問卷（可只問某幾天＝分段問卷）；covered＝已有問卷的天數
+  const days = classDays(g);
+  const boxes = days.map(d => el('input', { type: 'checkbox', value: d, checked: true }));
+  const out = el('div');
+  const btn = el('button', { type: 'button', text: '建立問卷' });
+  btn.addEventListener('click', () => {
+    const picked = boxes.filter(i => i.checked).map(i => i.value);
+    if (days.length > 1 && !picked.length) { say('至少要勾一天', 'err'); return; }
+    createInClass(g, picked.length === days.length ? [] : picked, false, btn, out);
+  });
+  const gen = el('div', { class: 'card form-card gen', hidden: true },
+    el('h3', { text: '依這班課表產生學習問卷' }),
+    days.length > 1 ? el('fieldset', {}, el('legend', { text: '這份問卷要問哪幾天？' }),
+      el('div', { class: 'days' }, boxes.map((b, i) => el('label', null, b, days[i] + (covered.has(days[i]) ? '（已建）' : '')))),
+      el('p', { class: 'hint', text: '全勾＝一次問完。只勾某幾天＝分段問卷；含最後一天的那份才會問課前課後自評與推薦題。勾到「已建」的天數，會變成那一段的新定稿。' })) : null,
+    btn, out);
+  gen.open = pick => {   // 打開並預先勾好天數
+    boxes.forEach(b => { b.checked = pick.includes(b.value); });
+    out.replaceChildren(); gen.hidden = false; gen.scrollIntoView({ behavior: 'smooth', block: 'center' }); btn.focus({ preventScroll: true });
+  };
+  return gen;
+}
+
+function rangeText(days) { return days.length > 1 ? days[0] + '～' + days.at(-1) : days[0] || ''; }
+
+function groupRow(g, x, gen, defOpen) {   // 一段問卷：定稿問卷 → 它的報告；舊版問卷收合
+  const f = x.final, req = f.request, all = classDays(g), state = groupState(x)[1];
+  const whole = !f.days || x.finalDays.length === all.length;
+  const isLast = all.length && x.finalDays.includes(all.at(-1));
+  const apply = el('div', { hidden: true }, requestForm(f));
+  const applyBtn = el('button', { type: 'button', class: 'small', disabled: isBusy(req),
+    text: isBusy(req) ? '報告處理中' : doneOf(f).length ? '重新產生報告（回覆變多時）' : '產生報告',
+    onclick: () => { apply.hidden = false; apply.querySelector('input').focus(); } });
+  const reqNote = req && req.status !== '已完成' ? (() => {
+    const [c, label, note] = STATUS[req.status] || ['', req.status, ''];
+    return [el('span', { class: 'chip ' + c, text: '最近一次申請：' + label }),
+      note ? el('p', { class: 'hint', text: note }) : null,
+      req.status === '失敗' && req.reason ? el('p', { class: 'hint', text: '原因：' + req.reason }) : null];
+  })() : null;
+  return fnRow(g.key + ':grp:' + rangeText(x.finalDays),
+    whole ? '全部上課日（' + x.finalDays.length + ' 天）' : rangeText(x.finalDays) + '（' + x.finalDays.length + ' 天）',
+    (isLast && !whole ? '收尾問卷｜' : '') + '定稿 ' + md(f.createdAt) + ' 建立｜' + state, null,
+    [el('div', { class: 'pair' },
+      el('div', {}, el('h4', { text: '定稿問卷' }), formCard(f),
+        el('button', { type: 'button', class: 'ghost small', text: '重新產生問卷', onclick: () => gen.open(x.finalDays) })),
+      el('div', {}, el('h4', { text: '這份問卷的報告' }), reqNote, reportList(f), applyBtn, apply)),
+     x.others.length ? el('details', { class: 'more' }, el('summary', { text: '其他版本（' + x.others.length + ' 份，沒用到的舊問卷）' }),
+       x.others.map(o => [formCard(o), doneOf(o).length ? el('div', { class: 'old-report' }, reportList(o)) : null])) : null],
+    defOpen, true);
+}
+
+function surveyRow(g) {   // 學習成效：問卷與它產生的報告放在一起
+  const gs = surveyGroups(g), covered = new Set(gs.flatMap(x => [...x.days])), all = classDays(g);
+  const gen = formGenerator(g, covered);
+  const newest = gs.reduce((a, x) => (!a || x.final.createdAt > a.final.createdAt ? x : a), null);
+  const active = gs.find(x => groupState(x)[0] !== 'done') || newest;   // 預設展開還沒完成的那段
+  const left = all.filter(d => !covered.has(d));
+  return fnRow(g.key + ':survey', '📝 學習成效（問卷＋報告）',
+    gs.length ? (gs.length > 1 ? gs.length + ' 段問卷｜' : '') + analysisStatus(g)[1] : '還沒建問卷',
+    { text: '＋ 產生問卷', run: () => gen.open(left.length ? left : all) },
+    [gen, gs.length ? gs.map(x => groupRow(g, x, gen, x === active))
+      : el('p', { class: 'hint', text: '按右邊「＋ 產生問卷」，就會依這班的課表建立問卷，不必重新上傳。' })],
+    true);   // 學習成效是班級頁的主角，預設展開
+}
+
+function classPage(g) {   // 單一班級頁：課表＋兩列功能
   return [el('div', { class: 'class-head' }, classInfo(g, true)),
-    g.schedule ? scheduleCard(g.schedule) : null,
-    el('h2', { class: 'fn-title', text: '🍱 用餐調查' }), mealCard(g),
-    el('h2', { class: 'fn-title', text: '📝 學習問卷（' + g.forms.length + ' 份）' }),
-    g.forms.length ? g.forms.map(formCard) : el('p', { class: 'hint', text: '這班還沒建問卷；回「我的班級」按「新增一班」上傳同一份課表即可建立。' }),
-    el('h2', { class: 'fn-title', text: '📊 分析報告（' + reports + ' 份）' }), reportsSection(g)];
+    g.schedule ? scheduleCard(g.schedule) : null, mealRow(g), surveyRow(g)];
 }
 
 let myMeals = {};   // 我開啟過用餐調查的班 → 最近開啟時間（後台 forms 一起回傳）
 
-function mealCard(g) {   // 規格 10.4：開啟用餐調查／已開啟時給學員入口
+function mealCard(g) {   // 規格 10.4：用餐調查這一列展開後的內容（開啟按鈕在列的右側）
   const at = myMeals[g.key] && myMeals[g.key].at;
-  if (!at && isEnded(g)) return el('p', { class: 'hint',text: '這班已結束，沒有開啟用餐調查。' });
+  if (!at && isEnded(g)) return el('p', { class: 'hint', text: '這班已結束，沒有開啟用餐調查。' });
   if (!at) {
-    const b =el('button', { type: 'button', class: 'small', text: '開啟用餐調查' });
-    b.addEventListener('click', () => enableMeal({ formId: g.forms[0].formId }, b));
-    return el('div', { class: 'card form-card' }, el('h2', { text: '還沒開啟' }),
-      el('p', { class: 'hint', text: '開啟後，學員從用餐總入口（學院那張用餐 QR）就能填寫；每天 10:00 會把當天的用餐人數寄到你的信箱，確認後轉寄給餐廳即可。' }),
-      el('p', { class: 'hint', text: '隔天早上 7:55 起才會出現在總入口，請在開課前一天以前開啟。' }), b);
+    return el('div', {},
+      el('p', { class: 'hint', text: '按右邊「產生」開啟後，學員從用餐總入口（學院那張用餐 QR）就能填寫；每天 10:00 會把當天的用餐人數寄到你的信箱，確認後轉寄給餐廳即可。' }),
+      el('p', { class: 'hint', text: '隔天早上 7:55 起才會出現在總入口，請在開課前一天以前開啟。' }));
   }
   const link = MEAL_INDEX_URL + 'meal.html?c=' + encodeURIComponent(g.key);
   const qr = el('img', { alt: '用餐總入口 QR Code', width: 180, height: 180 });
-  return el('div', { class: 'card form-card' }, el('h2', { text: '已開啟（' + md(at) + '）' }),
+  return el('div', { class: 'card form-card' },
     el('p', { class: 'hint', text: '隔天早上 7:55 起學員就能在總入口看到這一班；每天 10:00 會把當天用餐人數（只有人數）寄到你的信箱。課表有改的話，按「新增一班」重新上傳課表、按「只開啟用餐調查」即可更新。' }),
     el('div', { class: 'row' },
       el('a', { class: 'btn ghost small', href: MEAL_INDEX_URL, target: '_blank', rel: 'noopener', text: '開啟用餐總入口' }),
@@ -901,7 +1045,7 @@ async function enableMeal(source, button) {
   if (!data) return false;
   if ($('t-create').hidden) await loadList();   // 在班級頁開的：先重整再顯示訊息（重整會清掉訊息列）
   say(data.repeated ? data.code + ' 的用餐調查已經開啟，課表沒有變動，不必再按'
-    : '已開啟 ' + data.code + ' 的用餐調查，明天早上 7:55 起學員就能在用餐總入口看到這一班；回「我的班級」進入這班可看到用餐 QR', 'ok');
+    : '已開啟 ' + data.code + ' 的用餐調查，明天早上 7:55 起學員就能在用餐總入口看到這一班；用餐 QR 在這班的「用餐調查」那一列', 'ok');
   return true;
 }
 
