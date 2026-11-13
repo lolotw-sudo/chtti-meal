@@ -121,6 +121,8 @@ if (!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
   #b-new { width:auto; margin:0; }
   .filter { display:flex; gap:6px; }
   .filter button[aria-pressed=true] { background:var(--primary); color:var(--on-primary); }
+  .teacher-pick { display:flex; align-items:center; gap:6px; font-size:14px; }
+  .teacher-pick select { font:inherit; padding:6px 8px; border-radius:8px; border:1px solid var(--line); background:var(--surface); color:inherit; max-width:100%; }
   .back { margin:0 0 12px -8px; }
   /* 班級清單：一班一列、高度一致，右側「進入班級」到該班自己的頁面 */
   .class-list { display:grid; gap:12px; }
@@ -296,7 +298,7 @@ if (!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
     <!-- 首頁：我的班級（一班一張卡，點開看這班依功能整理的紀錄） -->
     <div id="t-list">
       <div class="list-head">
-        <h1 class="page-title">我的班級</h1>
+        <h1 class="page-title" id="list-title">我的班級</h1>
         <button type="button" class="ghost small" id="b-refresh">重新整理</button>
       </div>
       <div class="list-tools">
@@ -306,6 +308,7 @@ if (!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
           <button type="button" class="ghost small" data-f="done" aria-pressed="false">已結束</button>
           <button type="button" class="ghost small" data-f="all" aria-pressed="false">全部</button>
         </div>
+        <label class="teacher-pick" id="teacher-pick" hidden>老師 <select id="f-teacher"><option value="">全部老師</option></select></label>
       </div>
       <div id="l-items" class="class-list"></div>
     </div>
@@ -421,6 +424,7 @@ const store = {   // 私密瀏覽或封鎖網站資料時，讀寫可能丟例�
   set(area, k, v) { try { v == null ? window[area].removeItem(k) : window[area].setItem(k, v); } catch (e) {} },
 };
 let token = store.get('sessionStorage', 'cloudToken');
+let isAdmin = store.get('sessionStorage', 'cloudRole') === 'admin';   // 管理員＝唯讀總覽（規格 11）；權限由後台判斷，這裡只決定畫面
 let profile = JSON.parse(store.get('localStorage', 'cloudProfile') || 'null');
 let lastTable = null, lastResult = null;
 
@@ -461,12 +465,18 @@ async function api(action, payload, button, busyText) {
 }
 
 function logout(reason) {
-  token = null; store.set('sessionStorage', 'cloudToken', null);
+  allGroups = []; myMeals = {}; $('l-items').replaceChildren(); $('c-class').replaceChildren();   // 共用電腦：換人登入前不留上一位看到的資料
+  token = null; isAdmin = false; store.set('sessionStorage', 'cloudToken', null); store.set('sessionStorage', 'cloudRole', null);
   show('v-login'); say(reason || '', reason ? 'err' : '');
   if (reason) $('i-password').focus();
 }
 
 function enterApp() {
+  $('b-new').hidden = $('b-profile').hidden = isAdmin;
+  $('teacher-pick').hidden = !isAdmin;
+  $('list-title').textContent = isAdmin ? '全員班級（唯讀）' : '我的班級';
+  $('b-class-home').textContent = isAdmin ? '← 回全員班級' : '← 回我的班級';
+  if (isAdmin) { $('who').textContent = '管理員（唯讀）'; $('who').title = ''; show('v-app'); showHome(); return; }
   if (!profile) { show('v-profile'); $('i-name').focus(); return; }
   $('who').textContent = profile.name;
   $('who').title = profile.email;
@@ -741,7 +751,7 @@ function reportFiles(req, label) {   // 一份已完成報告：下載 Word＋�
   const dl = el('button', { type: 'button', class: label ? 'ghost small' : '', text: label ? '下載 Word' : '下載學習分析報告（Word）',
     'aria-label': label ? '下載 Word（' + label + '）' : null });
   dl.addEventListener('click', async () => {
-    const data = await api('download', { email: profile.email, requestId: req.id }, dl, '下載中…');
+    const data = await api('download', { email: isAdmin ? '' : profile.email, requestId: req.id }, dl, '下載中…');
     if (!data) return;
     const bytes = Uint8Array.from(atob(data.base64), ch => ch.charCodeAt(0));
     saveFile(new Blob([bytes], { type: data.mimeType }), data.fileName);
@@ -783,18 +793,20 @@ const isBusy = q => q && (q.status === '排隊中' || q.status === '處理中');
 function classGroups(forms, meals) {
   const groups = new Map();
   forms.forEach(f => {   // 後台已依建立時間新的在前
-    const key = f.code || f.classTitle;
-    if (!groups.has(key)) groups.set(key, { key, title: f.classTitle, forms: [], last: '' });
+    const code = f.code || f.classTitle, key = f.teacherEmail ? code + '\n' + f.teacherEmail : code;   // 管理員總覽：同代號不同老師分開列
+    if (!groups.has(key)) groups.set(key, { key, code, title: f.classTitle, forms: [], last: '' });
     const g = groups.get(key);
+    if (f.teacherEmail && !g.teacher) g.teacher = { name: f.teacherName, email: f.teacherEmail };   // 只有管理員總覽才有
     g.forms.push(f);
     if (!g.schedule && f.schedule && f.schedule.courses.length) g.schedule = f.schedule;   // 用最新那份問卷的課表
     [f.createdAt, ...reqsOf(f).flatMap(q => [q.requestedAt, q.completedAt])]
       .forEach(t => { if (t && t > g.last) g.last = t; if (t && (!g.first || t < g.first)) g.first = t; });
   });
   Object.entries(meals || {}).forEach(([code, m]) => {   // 只開了用餐調查、沒建問卷的班也要列出來
-    if (!groups.has(code)) groups.set(code, { key: code, title: m.title, forms: [], last: '',
+    if (!groups.has(code)) groups.set(code, { key: code, code: code.split('\n')[0], title: m.title, forms: [], last: '',
       schedule: m.schedule && m.schedule.courses.length ? m.schedule : null });
     const g = groups.get(code);
+    if (m.teacherEmail && !g.teacher) g.teacher = { name: m.teacherName, email: m.teacherEmail };
     const newest = g.forms.length ? g.forms[0].createdAt : '';   // 用餐那份課表比最新問卷新（重新上傳過）→ 用它，與後台 storedSchedule_ 一致
     if (m.schedule && m.schedule.courses.length && m.at > newest) g.schedule = m.schedule;
     if (m.at > g.last) g.last = m.at;
@@ -881,12 +893,13 @@ function statusChips(g) {   // 依開班流程排：用餐調查 → 學習問�
 
 function classInfo(g, big) {   // 清單列與班級頁共用的表頭：班代號／班名／日期・教室・最近活動
   const s = g.schedule, first = s && dayText(s.courses[0]), last = s && dayText(s.courses.at(-1));
-  const name = g.title.startsWith(g.key) ? g.title.slice(g.key.length).trim() : g.title;
-  return [el('div', { class: 'class-code', text: g.key }),
+  const name = g.title.startsWith(g.code) ? g.title.slice(g.code.length).trim() : g.title;
+  return [el('div', { class: 'class-code', text: g.code }),
     el(big ? 'h1' : 'h2', { class: 'class-name', text: name, tabindex: big ? -1 : null }),
     el('div', { class: 'class-meta' },
       s ? el('span', { class: 'ico' }, icon('calendar', 16), first + (last !== first ? '～' + last : '')) : null,
       s && s.classroom ? el('span', { class: 'ico' }, icon('pin', 16), s.classroom) : null,
+      g.teacher ? el('span', { text: '老師 ' + g.teacher.name, title: g.teacher.email }) : null,
       el('span', { text: '最近活動 ' + md(g.last) })),
     el('div', { class: 'status' }, statusChips(g))];
 }
@@ -936,12 +949,12 @@ function mealRow(g) {
   const at = myMeals[g.key] && myMeals[g.key].at, ended = isEnded(g);
   return fnRow(g.key + ':meal', ['utensils', '用餐調查'],
     at ? '已開啟（' + md(at) + '）' : ended ? '這班已結束，沒有開啟' : '還沒開啟',
-    at || ended ? null : { text: '產生', run: b => enableMeal({ code: g.key }, b) },
+    at || ended || isAdmin ? null : { text: '產生', run: b => enableMeal({ code: g.code }, b) },
     mealCard(g));
 }
 
 async function createInClass(g, days, confirmDuplicate, button, out) {
-  const data = await api('create', { code: g.key, days, name: profile.name, email: profile.email, confirmDuplicate },
+  const data = await api('create', { code: g.code, days, name: profile.name, email: profile.email, confirmDuplicate },
                          button, '建立問卷中（約 10–20 秒）…');
   if (!data) return;
   if (data.duplicate) {
@@ -1000,8 +1013,8 @@ function groupRow(g, x, gen, defOpen) {   // 一段問卷：定稿問卷 → 它
     (isLast && !whole ? '收尾問卷｜' : '') + '定稿 ' + md(f.createdAt) + ' 建立｜' + state, null,
     [el('div', { class: 'pair' },
       el('div', {}, el('h4', { text: '定稿問卷' }), formCard(f),
-        el('button', { type: 'button', class: 'ghost small', text: '重新產生問卷', onclick: () => gen.open(x.finalDays) })),
-      el('div', {}, el('h4', { text: '這份問卷的報告' }), reqNote, reportList(f), applyBtn, apply))],
+        isAdmin ? null : el('button', { type: 'button', class: 'ghost small', text: '重新產生問卷', onclick: () => gen.open(x.finalDays) })),
+      el('div', {}, el('h4', { text: '這份問卷的報告' }), reqNote, reportList(f), isAdmin ? null : [applyBtn, apply]))],
     defOpen, true);
 }
 
@@ -1013,9 +1026,9 @@ function surveyRow(g) {   // 學習成效：問卷與它產生的報告放在一
   const left = all.filter(d => !covered.has(d));
   return fnRow(g.key + ':survey', ['document', '學習成效（問卷＋報告）'],
     gs.length ? (gs.length > 1 ? gs.length + ' 段問卷｜' : '') + analysisStatus(g)[1] : '還沒建問卷',
-    { text: '＋ 產生問卷', run: () => gen.open(left.length ? left : all) },
-    [gen, gs.length ? gs.map(x => groupRow(g, x, gen, x === active))
-      : el('p', { class: 'hint', text: '按右邊「＋ 產生問卷」，就會依這班的課表建立問卷，不必重新上傳。' }),
+    isAdmin ? null : { text: '＋ 產生問卷', run: () => gen.open(left.length ? left : all) },
+    [isAdmin ? null : gen, gs.length ? gs.map(x => groupRow(g, x, gen, x === active))
+      : el('p', { class: 'hint', text: isAdmin ? '這班還沒建問卷。' : '按右邊「＋ 產生問卷」，就會依這班的課表建立問卷，不必重新上傳。' }),
      gs.loose && gs.loose.length ? el('details', { class: 'more' },
        el('summary', { text: '其他版本（' + gs.loose.length + ' 份，沒用到的舊問卷）' }),
        gs.loose.map(o => [formCard(o), doneOf(o).length ? el('div', { class: 'old-report' }, reportList(o)) : null])) : null],
@@ -1032,14 +1045,16 @@ let myMeals = {};   // 我開啟過用餐調查的班 → 最近開啟時間（�
 function mealCard(g) {   // 規格 10.4：用餐調查這一列展開後的內容（開啟按鈕在列的右側）
   const at = myMeals[g.key] && myMeals[g.key].at;
   if (!at && isEnded(g)) return el('p', { class: 'hint', text: '這班已結束，沒有開啟用餐調查。' });
+  if (!at && isAdmin) return el('p', { class: 'hint', text: '這班還沒開啟用餐調查。' });
   if (!at) {
     return el('div', {},
       el('p', { class: 'hint', text: '按右邊「產生」開啟後，學員從用餐總入口（學院那張用餐 QR）就能填寫；每天 10:00 會把當天的用餐人數寄到你的信箱，確認後轉寄給餐廳即可。' }),
       el('p', { class: 'hint', text: '隔天早上 7:55 起才會出現在總入口，請在開課前一天以前開啟。' }));
   }
-  const link = MEAL_INDEX_URL + 'meal.html?c=' + encodeURIComponent(g.key);
+  const link = MEAL_INDEX_URL + 'meal.html?c=' + encodeURIComponent(g.code);
   const qr = el('img', { alt: '用餐總入口 QR Code', width: 180, height: 180 });
   return el('div', { class: 'card form-card' },
+    isAdmin ? el('p', { class: 'hint', text: '已由 ' + (g.teacher ? g.teacher.name : '老師') + ' 開啟；每天 10:00 的用餐人數寄給這位老師。' }) :
     el('p', { class: 'hint', text: '隔天早上 7:55 起學員就能在總入口看到這一班；每天 10:00 會把當天用餐人數（只有人數）寄到你的信箱。課表有改的話，按「新增一班」重新上傳課表、按「只開啟用餐調查」即可更新。' }),
     el('div', { class: 'row' },
       el('a', { class: 'btn ghost small', href: MEAL_INDEX_URL, target: '_blank', rel: 'noopener', text: '開啟用餐總入口' }),
@@ -1064,10 +1079,11 @@ const FILTER_EMPTY = { now: '目前沒有進行中的班級，可以切到「已
 function renderList() {
   if (!allGroups.length) {   // 第一次用：只給新增一班與三份成品的說明
     $('l-items').replaceChildren(el('div', { class: 'card empty' }, el('h2', { text: '還沒有班級' }),
-      el('p', { class: 'hint', text: '按「新增一班」上傳課表，就能拿到學習回饋問卷和通知學員的信，也可以開啟用餐調查；課程結束、回覆收齊後，在這裡申請學習分析報告。' })));
+      el('p', { class: 'hint', text: isAdmin ? '目前還沒有任何老師使用雲端版。' : '按「新增一班」上傳課表，就能拿到學習回饋問卷和通知學員的信，也可以開啟用餐調查；課程結束、回覆收齊後，在這裡申請學習分析報告。' })));
     return;
   }
-  const shown = allGroups.filter(g => filter === 'all' || isEnded(g) === (filter === 'done'));
+  const who = isAdmin ? $('f-teacher').value : '';
+  const shown = allGroups.filter(g => (filter === 'all' || isEnded(g) === (filter === 'done')) && (!who || (g.teacher && g.teacher.email === who)));
   $('l-items').replaceChildren(...(shown.length ? shown.map(classRow) : [el('p', { class: 'hint', text: FILTER_EMPTY[filter] })]));
 }
 
@@ -1078,13 +1094,23 @@ function renderClass() {
 }
 
 async function loadList() {   // 重新讀資料；在班級頁時（例如剛申請報告、開用餐調查）一併重畫那一班
-  const data = await api('forms', { email: profile.email }, $('b-refresh'), '讀取中…');
+  const data = await api(isAdmin ? 'all' : 'forms', isAdmin ? {} : { email: profile.email }, $('b-refresh'), '讀取中…');
   if (!data) return;
   myMeals = data.meals || {};
   allGroups = classGroups(data.forms, myMeals);
+  if (isAdmin) teacherOptions();
   renderList();
   if (!$('t-class').hidden) renderClass();
 }
+
+function teacherOptions() {   // 管理員的「老師」下拉：依目前資料重建，保留原本選的那位
+  const sel = $('f-teacher'), keep = sel.value, seen = new Map();
+  allGroups.forEach(g => { if (g.teacher) seen.set(g.teacher.email, g.teacher.name); });
+  sel.replaceChildren(el('option', { value: '', text: '全部老師' }),
+    ...[...seen].sort((a, b) => a[1].localeCompare(b[1], 'zh-Hant')).map(([email, name]) => el('option', { value: email, text: name + '（' + email + '）' })));
+  sel.value = seen.has(keep) ? keep : '';
+}
+$('f-teacher').addEventListener('change', renderList);
 
 document.querySelectorAll('.filter button').forEach(b => b.addEventListener('click', () => {
   filter = b.dataset.f;
@@ -1121,6 +1147,7 @@ $('f-login').addEventListener('submit', async e => {
   const data = await api('login', { password: $('i-password').value }, e.submitter, '確認中…');
   if (!data) return;
   token = data.token; store.set('sessionStorage', 'cloudToken', token);
+  isAdmin = data.role === 'admin'; store.set('sessionStorage', 'cloudRole', isAdmin ? 'admin' : null);
   $('i-password').value = '';
   enterApp();
   window.scrollTo(0, 0);
