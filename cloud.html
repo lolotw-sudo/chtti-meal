@@ -72,7 +72,8 @@ if (!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
   .when { display:block; margin-top:10px; font-size:.82rem; font-weight:700; color:var(--primary); }
   .ln { height:8px; border-radius:4px; background:var(--line); }
   .stars { color:var(--sun); letter-spacing:3px; font-size:1rem; line-height:1; }
-  .mail-sub { font-size:.8rem; font-weight:700; }
+  .qr-mock { place-items:center; align-content:center; }
+  .qr-glyph { color:var(--ink); }
   .bars { display:flex; align-items:flex-end; gap:8px; height:72px; }
   .bars i { flex:1; background:var(--primary); border-radius:3px 3px 0 0; opacity:.85; }
   .start { max-width:480px; margin:0 auto; scroll-margin-top:16px; }
@@ -240,7 +241,7 @@ if (!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
   <section id="v-login" hidden>
     <div class="hero">
       <h1>交出一份課表<br>收下三份成品</h1>
-      <p class="lead">學習回饋問卷、通知學員的信、學習分析報告——網路學系老師共用的課後小幫手。</p>
+      <p class="lead">學習回饋問卷、用餐調查、學習分析報告——網路學系老師共用的課後小幫手。</p>
       <p style="margin-top:14px"><a href="#start" onclick="setTimeout(() => document.getElementById('i-password').focus({ preventScroll: true }), 350)">已經有通關密碼？直接登入</a></p>
     </div>
 
@@ -251,9 +252,8 @@ if (!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
         <h3>學習回饋問卷</h3><p>依課表自動出題的 Google 表單，附 QR code，學員掃了就能填。</p><span class="when">上傳課表後立即完成</span>
       </div></li>
       <li><div class="sheet">
-        <div class="mock" aria-hidden="true"><span class="mail-sub">（8/12） 範例班課程回饋</span><div class="ln"></div>
-          <div class="ln" style="width:88%"></div><div class="ln" style="width:94%"></div><div class="ln" style="width:40%"></div></div>
-        <h3>通知學員的信</h3><p>主旨與內文都寫好了，一鍵複製貼到信箱就能寄。</p><span class="when">跟問卷一起拿到</span>
+        <div class="mock qr-mock" aria-hidden="true"><svg class="qr-glyph" viewBox="0 0 21 21" width="96" height="96" shape-rendering="crispEdges" fill="currentColor"><rect x="0" y="0" width="7" height="7"/><rect x="1" y="1" width="5" height="5" fill="var(--surface)"/><rect x="2" y="2" width="3" height="3"/><rect x="14" y="0" width="7" height="7"/><rect x="15" y="1" width="5" height="5" fill="var(--surface)"/><rect x="16" y="2" width="3" height="3"/><rect x="0" y="14" width="7" height="7"/><rect x="1" y="15" width="5" height="5" fill="var(--surface)"/><rect x="2" y="16" width="3" height="3"/><path d="M8 0h1v1h-1zM9 0h1v1h-1zM11 0h1v1h-1zM8 1h1v1h-1zM9 1h1v1h-1zM11 1h1v1h-1zM12 1h1v1h-1zM8 2h1v1h-1zM9 2h1v1h-1zM10 2h1v1h-1zM12 2h1v1h-1zM8 3h1v1h-1zM12 3h1v1h-1zM9 4h1v1h-1zM11 4h1v1h-1zM12 4h1v1h-1zM8 5h1v1h-1zM9 5h1v1h-1zM11 5h1v1h-1zM9 6h1v1h-1zM11 6h1v1h-1zM12 6h1v1h-1zM8 7h1v1h-1zM10 7h1v1h-1zM11 7h1v1h-1zM1 8h1v1h-1zM4 8h1v1h-1zM9 8h1v1h-1zM11 8h1v1h-1zM12 8h1v1h-1zM14 8h1v1h-1zM16 8h1v1h-1zM0 9h1v1h-1zM9 9h1v1h-1zM14 9h1v1h-1zM15 9h1v1h-1zM17 9h1v1h-1zM19 9h1v1h-1zM20 9h1v1h-1zM0 10h1v1h-1zM2 10h1v1h-1zM3 10h1v1h-1zM4 10h1v1h-1zM6 10h1v1h-1zM7 10h1v1h-1zM12 10h1v1h-1zM13 10h1v1h-1zM14 10h1v1h-1zM17 10h1v1h-1zM18 10h1v1h-1zM19 10h1v1h-1zM20 10h1v1h-1zM2 11h1v1h-1zM3 11h1v1h-1zM4 11h1v1h-1zM5 11h1v1h-1zM12 11h1v1h-1zM17 11h1v1h-1zM18 11h1v1h-1zM19 11h1v1h-1zM0 12h1v1h-1zM1 12h1v1h-1zM2 12h1v1h-1zM3 12h1v1h-1zM4 12h1v1h-1zM5 12h1v1h-1zM6 12h1v1h-1zM7 12h1v1h-1zM8 12h1v1h-1zM9 12h1v1h-1zM10 12h1v1h-1zM13 12h1v1h-1zM14 12h1v1h-1zM15 12h1v1h-1zM16 12h1v1h-1zM17 12h1v1h-1zM9 13h1v1h-1zM10 13h1v1h-1zM11 13h1v1h-1zM12 13h1v1h-1zM14 13h1v1h-1zM15 13h1v1h-1zM18 13h1v1h-1zM20 13h1v1h-1zM12 14h1v1h-1zM13 14h1v1h-1zM14 14h1v1h-1zM18 14h1v1h-1zM19 14h1v1h-1zM13 15h1v1h-1zM15 15h1v1h-1zM16 15h1v1h-1zM17 15h1v1h-1zM18 15h1v1h-1zM19 15h1v1h-1zM9 16h1v1h-1zM13 16h1v1h-1zM14 16h1v1h-1zM15 16h1v1h-1zM16 16h1v1h-1zM17 16h1v1h-1zM11 17h1v1h-1zM17 17h1v1h-1zM19 17h1v1h-1zM9 18h1v1h-1zM10 18h1v1h-1zM13 18h1v1h-1zM14 18h1v1h-1zM15 18h1v1h-1zM18 18h1v1h-1zM9 19h1v1h-1zM11 19h1v1h-1zM12 19h1v1h-1zM17 19h1v1h-1zM20 19h1v1h-1zM8 20h1v1h-1zM9 20h1v1h-1zM10 20h1v1h-1zM12 20h1v1h-1zM13 20h1v1h-1zM14 20h1v1h-1zM16 20h1v1h-1zM20 20h1v1h-1z"/></svg></div>
+        <h3>用餐調查</h3><p>學員掃學院那張用餐 QR 就能填，每天 10:00 把當天用餐人數寄到你的信箱。</p><span class="when">開課前一天以前開啟</span>
       </div></li>
       <li><div class="sheet">
         <div class="mock" aria-hidden="true"><div class="ln" style="width:60%"></div>
