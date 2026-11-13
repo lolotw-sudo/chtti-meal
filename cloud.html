@@ -738,7 +738,7 @@ function formCard(f) {
       })));
   }
   if (!busy) {
-    parts.push(el('details', { class: 'more', open: !req }, el('summary', { text: req ? (req.status === '已完成' ? '重新產生報告' : '重新申請') : '申請學習分析報告' }), requestForm(f)));
+    parts.push(el('details', { class: 'more' }, el('summary', { text: req ? (req.status === '已完成' ? '重新產生報告' : '重新申請') : '申請學習分析報告' }), requestForm(f)));
   }
   return el('div', { class: 'card form-card' }, parts);
 }
