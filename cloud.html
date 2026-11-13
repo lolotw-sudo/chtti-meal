@@ -5,6 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>網路學系 學習成效雲端版</title>
+<!-- Google Analytics 4（資源「工作台雲端版」）：只算每月活躍度。本機模擬版不載入，免得測試灌水。
+     事件只送名稱（login／create_form／submit_analysis），絕不送姓名、信箱或課表內容。 -->
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag() { dataLayer.push(arguments); }
+const GA_ID = 'G-G1ZY3G7NDM';
+if (!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
+  const s = document.createElement('script');
+  s.async = true; s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
+  document.head.appendChild(s);
+  gtag('js', new Date());
+  gtag('config', GA_ID, { allow_google_signals: false, allow_ad_personalization_signals: false });
+}
+</script>
 <!-- 首頁「三份成品」版（2026-11-12 LOLO 從三個改版候選中選定）：先攤開老師會拿到的問卷、通知信、分析報告，再請輸入通關密碼。
      工作台雲端版前台（規格：trainer-tools 的 docs/cloud-edition-spec.md）。
      這頁只有畫面：不含密碼、資料或授權；所有動作都送到 Apps Script 後台並在那裡驗證。
@@ -374,6 +388,8 @@ async function api(action, payload, button, busyText) {
       else say(data.error, 'err');
       return null;
     }
+    const ev = { login: 'login', create: 'create_form', submit: 'submit_analysis' }[action];
+    if (ev && !data.duplicate) gtag('event', ev);   // 活躍度統計：只記「發生一次」，不帶任何個資
     return data;
   } catch (e) {
     say('連不上後台，請檢查網路後再試一次', 'err');
