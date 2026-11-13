@@ -1,6 +1,6 @@
 {
  "api": "https://script.google.com/macros/s/AKfycbwfvueeAWS5888fns4bmCOc335OEJ-DAfepPFJrP_V2WTMatrU79B8L1QPtjpy1rsH0/exec",
- "updated": "2026-11-12 12:55",
+ "updated": "2026-11-13 11:44",
  "courses": {
   "LT214P007": {
    "title": "CEMIS-II設計管理作業實務班 第007期",
@@ -207,6 +207,16 @@
     },
     {
      "label": "11/11（三）",
+     "lunch": true,
+     "dinner": false
+    }
+   ]
+  },
+  "TM2B1P030": {
+   "title": "5G網路研習班 第030期",
+   "days": [
+    {
+     "label": "11/19（四）",
      "lunch": true,
      "dinner": false
     }
