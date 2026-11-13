@@ -832,23 +832,22 @@ const classDays = g => g.schedule ? [...new Set(g.schedule.courses.map(dayText))
 const formDays = (f, g) => f.days ? f.days.split('、')
   : f.schedule ? [...new Set(f.schedule.courses.map(dayText))] : classDays(g);   // 空白＝全部上課日
 
-// 問卷分組：問的天數有重疊＝同一份的不同版本（重跑），最新建的是定稿；完全不重疊＝不同段（分段問卷）
+// 問卷分段：每一天歸給「最新」問到它的那份問卷；分到天數的問卷各是一段的定稿（分段問卷各自一段）。
+// 天數全被後來的問卷取代的舊問卷＝其他版本，一律集中在整區最下面（groups.loose，LOLO 白板定的階層）。
+// 例：全部 → 改成 11/9-10、11/11、11/12 三份 ⇒ 三段＋其他版本 1 份。
 function surveyGroups(g) {
-  let groups = [];
-  [...g.forms].reverse().forEach(f => {   // 由舊到新
-    const days = formDays(f, g), hit = groups.filter(x => days.some(d => x.days.has(d)));
-    const merged = { days: new Set(days), forms: [f] };
-    hit.forEach(x => { x.days.forEach(d => merged.days.add(d)); merged.forms.push(...x.forms); });
-    groups = groups.filter(x => !hit.includes(x)).concat(merged);
-  });
   const order = classDays(g), pos = d => (order.indexOf(d) + 1) || 999;
-  groups.forEach(x => {
-    x.forms.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-    x.final = x.forms[0]; x.others = x.forms.slice(1);
-    x.finalDays = formDays(x.final, g).sort((a, b) => pos(a) - pos(b));
-    x.start = Math.min(...[...x.days].map(pos));
+  const newestFirst = [...g.forms].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const owner = new Map();
+  newestFirst.forEach(f => formDays(f, g).forEach(d => { if (!owner.has(d)) owner.set(d, f); }));
+  const finals = new Set(owner.values());
+  const groups = newestFirst.filter(f => finals.has(f)).map(f => {
+    const finalDays = formDays(f, g).sort((a, b) => pos(a) - pos(b));
+    return { final: f, days: new Set(finalDays), finalDays, start: Math.min(...finalDays.map(pos)) };
   });
-  return groups.sort((a, b) => a.start - b.start);
+  groups.sort((a, b) => a.start - b.start);
+  groups.loose = newestFirst.filter(f => !finals.has(f));
+  return groups;
 }
 
 function groupState(x) {   // 定稿問卷的報告狀態：[標籤樣式, 文字]
@@ -993,9 +992,7 @@ function groupRow(g, x, gen, defOpen) {   // 一段問卷：定稿問卷 → 它
     [el('div', { class: 'pair' },
       el('div', {}, el('h4', { text: '定稿問卷' }), formCard(f),
         el('button', { type: 'button', class: 'ghost small', text: '重新產生問卷', onclick: () => gen.open(x.finalDays) })),
-      el('div', {}, el('h4', { text: '這份問卷的報告' }), reqNote, reportList(f), applyBtn, apply)),
-     x.others.length ? el('details', { class: 'more' }, el('summary', { text: '其他版本（' + x.others.length + ' 份，沒用到的舊問卷）' }),
-       x.others.map(o => [formCard(o), doneOf(o).length ? el('div', { class: 'old-report' }, reportList(o)) : null])) : null],
+      el('div', {}, el('h4', { text: '這份問卷的報告' }), reqNote, reportList(f), applyBtn, apply))],
     defOpen, true);
 }
 
@@ -1009,7 +1006,10 @@ function surveyRow(g) {   // 學習成效：問卷與它產生的報告放在一
     gs.length ? (gs.length > 1 ? gs.length + ' 段問卷｜' : '') + analysisStatus(g)[1] : '還沒建問卷',
     { text: '＋ 產生問卷', run: () => gen.open(left.length ? left : all) },
     [gen, gs.length ? gs.map(x => groupRow(g, x, gen, x === active))
-      : el('p', { class: 'hint', text: '按右邊「＋ 產生問卷」，就會依這班的課表建立問卷，不必重新上傳。' })],
+      : el('p', { class: 'hint', text: '按右邊「＋ 產生問卷」，就會依這班的課表建立問卷，不必重新上傳。' }),
+     gs.loose && gs.loose.length ? el('details', { class: 'more' },
+       el('summary', { text: '其他版本（' + gs.loose.length + ' 份，沒用到的舊問卷）' }),
+       gs.loose.map(o => [formCard(o), doneOf(o).length ? el('div', { class: 'old-report' }, reportList(o)) : null])) : null],
     true);   // 學習成效是班級頁的主角，預設展開
 }
 
