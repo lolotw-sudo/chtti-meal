@@ -116,9 +116,27 @@ if (!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
   #msg.err { background:var(--err-bg); color:var(--err); border:1px solid var(--err); }
 
   /* ── 登入後 ── */
-  .tabs { display:flex; gap:4px; padding:4px; background:var(--surface); border:1px solid var(--line); border-radius:14px; margin:4px 0 20px; }
-  .tabs button { margin:0; min-height:44px; background:transparent; color:var(--muted); border:0; border-radius:10px; }
-  .tabs button[aria-selected=true] { background:var(--primary); color:var(--on-primary); }
+  .page-title { font-family:var(--serif); font-size:1.6rem; }
+  .list-tools { display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; margin-bottom:18px; }
+  #b-new { width:auto; margin:0; }
+  .filter { display:flex; gap:6px; }
+  .filter button[aria-pressed=true] { background:var(--primary); color:var(--on-primary); }
+  .back { margin:0 0 12px -8px; }
+  /* 班級清單：一班一列、高度一致，右側「進入班級」到該班自己的頁面 */
+  .class-list { display:grid; gap:12px; }
+  .class-row { display:flex; align-items:center; gap:16px; padding:16px 20px; border:1px solid var(--line); border-radius:14px;
+    background:var(--surface); box-shadow:var(--shadow); }
+  .class-row .info { flex:1; min-width:0; }
+  .class-code { font-size:.78rem; font-weight:700; letter-spacing:.06em; color:var(--muted); }
+  .class-name { font-family:var(--serif); font-weight:700; font-size:1.1rem; margin:2px 0 6px; }
+  .class-meta { display:flex; flex-wrap:wrap; gap:4px 16px; color:var(--muted); font-size:.88rem; }
+  .status { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  .status .chip { font-size:.8rem; padding:2px 10px; }
+  .class-row button { width:auto; margin:0; flex:none; }
+  @media (max-width:600px) { .class-row { flex-direction:column; align-items:stretch; } .class-row button { width:100%; } }
+  .class-head { margin-bottom:8px; }
+  .class-head .class-name { font-size:1.45rem; }
+  .fn-title { font-family:var(--serif); font-size:1.12rem; margin:26px 0 10px; }
   .stepper { display:flex; gap:8px; list-style:none; padding:0; margin:0 0 16px; counter-reset:st; }
   .stepper li { flex:1; counter-increment:st; font-size:.88rem; color:var(--muted); font-weight:600;
                 border-top:4px solid var(--line); padding-top:8px; }
@@ -162,14 +180,6 @@ if (!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
   .chip.fail { background:var(--err-bg); border-color:var(--err); color:var(--err); }
   .chip.wait { background:var(--warn-bg); border-color:var(--warn-line); color:var(--warn-fg); }
   .form-card h2 { font-size:1.08rem; }
-  details.class-group { margin-bottom:14px; }
-  details.class-group > summary { cursor:pointer; list-style:none; display:flex; flex-direction:column; gap:2px;
-    padding:14px 18px; border:1px solid var(--line); border-radius:14px; background:var(--surface); min-height:44px; }
-  details.class-group > summary::-webkit-details-marker { display:none; }
-  details.class-group > summary .class-title { font-family:var(--serif); font-weight:700; }
-  details.class-group > summary .class-title::before { content:'▸ '; color:var(--primary); }
-  details.class-group[open] > summary .class-title::before { content:'▾ '; }
-  details.class-group > .form-card { margin:10px 0 0 14px; }
   .old-report { margin-top:10px; }
   details.schedule { margin-top:0; border-top:0; padding-top:0; }
   .list-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; }
@@ -264,13 +274,33 @@ if (!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
   </section>
 
   <!-- 主畫面 -->
-  <section id="v-app" class="narrow" hidden>
-    <div class="tabs" role="tablist">
-      <button type="button" role="tab" id="tab-create" aria-controls="t-create" aria-selected="true">產生問卷</button>
-      <button type="button" role="tab" id="tab-list" aria-controls="t-list" aria-selected="false">我的開班歷程</button>
+  <section id="v-app" hidden>
+    <!-- 首頁：我的班級（一班一張卡，點開看這班依功能整理的紀錄） -->
+    <div id="t-list">
+      <div class="list-head">
+        <h1 class="page-title">我的班級</h1>
+        <button type="button" class="ghost small" id="b-refresh">重新整理</button>
+      </div>
+      <div class="list-tools">
+        <button type="button" id="b-new">＋ 新增一班（上傳課表）</button>
+        <div class="filter" role="group" aria-label="篩選班級">
+          <button type="button" class="ghost small" data-f="now" aria-pressed="true">進行中</button>
+          <button type="button" class="ghost small" data-f="done" aria-pressed="false">已結束</button>
+          <button type="button" class="ghost small" data-f="all" aria-pressed="false">全部</button>
+        </div>
+      </div>
+      <div id="l-items" class="class-list"></div>
     </div>
 
-    <div id="t-create" role="tabpanel" aria-labelledby="tab-create">
+    <!-- 單一班級頁：依功能整理（課表／用餐調查／學習問卷／分析報告） -->
+    <div id="t-class" class="narrow" hidden>
+      <button type="button" class="link back" id="b-class-home">← 回我的班級</button>
+      <div id="c-class"></div>
+    </div>
+
+    <!-- 新增一班：上傳課表 → 確認 → 建問卷或只開用餐調查 -->
+    <div id="t-create" class="narrow" hidden>
+      <button type="button" class="link back" id="b-home">← 回我的班級</button>
       <ol class="stepper" id="stepper" aria-label="產生問卷的步驟">
         <li class="on" aria-current="step">上傳課表</li><li>確認課表</li><li>拿到問卷</li>
       </ol>
@@ -342,16 +372,11 @@ if (!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
         <textarea id="r-body" readonly></textarea>
         <div class="row"><button type="button" class="ghost" id="b-copy-subject">複製主旨</button>
           <button type="button" class="ghost" id="b-copy-body">複製內文</button></div>
-        <button type="button" class="ghost" id="b-again">再建一份（換課表或換天數）</button>
+        <div class="row">
+          <button type="button" id="b-done">回我的班級</button>
+          <button type="button" class="ghost" id="b-again">再建一份（換課表或換天數）</button>
+        </div>
       </div>
-    </div>
-
-    <div id="t-list" role="tabpanel" aria-labelledby="tab-list" hidden>
-      <div class="list-head">
-        <p class="meta">每個班做過的問卷與分析報告都在這裡；課程結束、回覆收齊後，也在這裡申請學習分析報告。</p>
-        <button type="button" class="ghost small" id="b-refresh">重新整理</button>
-      </div>
-      <div id="l-items"></div>
     </div>
   </section>
 
@@ -424,6 +449,7 @@ function enterApp() {
   $('who').textContent = profile.name;
   $('who').title = profile.email;
   show('v-app');
+  showHome();   // 登入後首頁＝我的班級
 }
 
 function copy(text, what) {
@@ -726,21 +752,13 @@ function formCard(f) {
         el('button', { type: 'button', class: 'ghost small', text: '複製主旨', onclick: () => copy(f.subject, '主旨') }),
         el('button', { type: 'button', class: 'ghost small', text: '複製內文', onclick: () => copy(f.body, '內文') }))),
   ];
-  if (req) {
+  if (req) {   // 完成的報告列在「分析報告」區；這裡只提示申請進度
     const [cls, label, note] = STATUS[req.status] || ['', req.status, ''];
     const box = el('div', { class: 'more', style: 'margin-top:14px' }, el('span', { class: 'chip ' + cls, text: '分析報告：' + label }));
+    if (req.status === '已完成') box.append(el('p', { class: 'hint', text: '報告在下方「分析報告」。' }));
     if (note) box.append(el('p', { class: 'hint', text: note }));
     if (req.status === '失敗' && req.reason) box.append(el('p', { class: 'hint', text: '原因：' + req.reason }));
     parts.push(box);
-    if (req.status === '已完成') parts.push(...reportFiles(req));
-  }
-  const older = reqsOf(f).slice(1).filter(q => q.status === '已完成');   // 重新產生前的舊版報告
-  if (older.length) {
-    parts.push(el('details', { class: 'more' }, el('summary', { text: '舊版報告（' + older.length + ' 份）' }),
-      older.map(q => {
-        const label = '舊版 ' + md(q.completedAt || q.requestedAt);
-        return el('div', { class: 'old-report' }, el('p', { class: 'meta', text: label + '｜' + (q.fileName || '') }), reportFiles(q, label));
-      })));
   }
   if (!busy) {
     parts.push(el('details', { class: 'more' }, el('summary', { text: req ? (req.status === '已完成' ? '重新產生報告' : '重新申請') : '申請學習分析報告' }), requestForm(f)));
@@ -748,8 +766,7 @@ function formCard(f) {
   return el('div', { class: 'card form-card' }, parts);
 }
 
-// 我的開班歷程：同一個班代號的問卷收在一起，最近有動作的班排最上面
-const openGroups = new Set();   // 重新整理清單後，維持老師原本展開的班
+// 我的班級：同一個班代號的問卷收在一起，最近有動作的班排最上面
 
 function classGroups(forms, meals) {
   const groups = new Map();
@@ -760,13 +777,14 @@ function classGroups(forms, meals) {
     g.forms.push(f);
     if (!g.schedule && f.schedule && f.schedule.courses.length) g.schedule = f.schedule;   // 用最新那份問卷的課表
     [f.createdAt, ...reqsOf(f).flatMap(q => [q.requestedAt, q.completedAt])]
-      .forEach(t => { if (t && t > g.last) g.last = t; });
+      .forEach(t => { if (t && t > g.last) g.last = t; if (t && (!g.first || t < g.first)) g.first = t; });
   });
   Object.entries(meals || {}).forEach(([code, m]) => {   // 只開了用餐調查、沒建問卷的班也要列出來
     if (!groups.has(code)) groups.set(code, { key: code, title: m.title, forms: [], last: '',
       schedule: m.schedule && m.schedule.courses.length ? m.schedule : null });
     const g = groups.get(code);
     if (m.at > g.last) g.last = m.at;
+    if (m.at && (!g.first || m.at < g.first)) g.first = m.at;
   });
   return [...groups.values()].sort((a, b) => b.last.localeCompare(a.last));
 }
@@ -784,35 +802,92 @@ function scheduleCard(s) {   // 展開班級後最上方的完整課表（可收
       el('table', {}, el('thead', {}, head), el('tbody', {}, rows))));
 }
 
-function classGroup(g, i) {
-  const reports = g.forms.reduce((n, f) => n + reqsOf(f).filter(q => q.status === '已完成').length, 0);
-  if (!openGroups.size && i === 0) openGroups.add(g.key);   // 沒有展開中的班：展開最近的那一班
-  return el('details', { class: 'class-group', open: openGroups.has(g.key),
-      ontoggle: e => { e.target.open ? openGroups.add(g.key) : openGroups.delete(g.key); } },
-    el('summary', {},
-      el('span', { class: 'class-title', text: g.title }),
-      g.schedule ? el('span', { class: 'meta', text: '上課日：' + dayText(g.schedule.courses[0])
-        + (g.schedule.courses.length > 1 && dayText(g.schedule.courses.at(-1)) !== dayText(g.schedule.courses[0]) ? '～' + dayText(g.schedule.courses.at(-1)) : '')
-        + (g.schedule.classroom ? '・教室 ' + g.schedule.classroom : '') }) : null,
-      el('span', { class: 'meta', text: '問卷 ' + g.forms.length + ' 份｜報告 ' + reports + ' 份｜最近活動 ' + md(g.last) })),
-    g.schedule ? scheduleCard(g.schedule) : null, mealCard(g), g.forms.map(formCard));
+// 課表只有「月/日」：年份取這班最早一筆紀錄的年份；結束月比紀錄月早半年以上＝跨年（12 月建表、1 月上課）
+function endDate(g) {
+  if (!g.schedule) return null;
+  const [m, d] = g.schedule.courses.at(-1).date.split('/').map(Number);
+  if (!m || !d) return null;
+  const ref = new Date((g.first || g.last).slice(0, 10));
+  return new Date(ref.getFullYear() + (m < ref.getMonth() + 1 - 6 ? 1 : 0), m - 1, d);
+}
+function isEnded(g) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const end = endDate(g);
+  // ponytail: 舊問卷沒存課表、算不出結業日 → 最近 30 天沒動靜就算已結束；之後若都有課表可拿掉這條
+  return end ? end < today : new Date(g.last.slice(0, 10)) < new Date(today - 30 * 864e5);
+}
+
+const doneReports = g => g.forms.flatMap(f => reqsOf(f).filter(q => q.status === '已完成'))
+  .sort((a, b) => (b.completedAt || '').localeCompare(a.completedAt || ''));
+
+function statusChips(g) {   // 依開班流程排：用餐調查 → 學習問卷 → 分析；done＝完成、wait＝等待中、fail＝要處理、無＝還沒做
+  const meal = myMeals[g.key] && myMeals[g.key].at, n = g.forms.length, reports = doneReports(g).length;
+  const latest = g.forms.map(f => f.request).filter(Boolean);
+  const analysis = reports ? ['done', '報告已完成' + (reports > 1 ? ' ' + reports + ' 份' : '')]
+    : latest.some(q => q.status === '排隊中' || q.status === '處理中') ? ['wait', '報告處理中']
+    : latest.some(q => q.status === '失敗') ? ['fail', '沒有產生報告']
+    : n ? ['wait', '回覆收齊後可申請'] : ['', '要先建問卷'];
+  return [[meal ? 'done' : '', '用餐調查：' + (meal ? '已開啟' : isEnded(g) ? '沒有開' : '還沒開')],
+          [n ? 'done' : '', '學習問卷：' + (n ? '已建' + (n > 1 ? ' ' + n + ' 份' : '') : '還沒建')],
+          [analysis[0], '分析：' + analysis[1]]]
+    .map(([cls, text]) => el('span', { class: 'chip ' + cls, text }));
+}
+
+function classInfo(g, big) {   // 清單列與班級頁共用的表頭：班代號／班名／日期・教室・最近活動
+  const s = g.schedule, first = s && dayText(s.courses[0]), last = s && dayText(s.courses.at(-1));
+  const name = g.title.startsWith(g.key) ? g.title.slice(g.key.length).trim() : g.title;
+  return [el('div', { class: 'class-code', text: g.key }),
+    el(big ? 'h1' : 'h2', { class: 'class-name', text: name, tabindex: big ? -1 : null }),
+    el('div', { class: 'class-meta' },
+      s ? el('span', { text: '📅 ' + first + (last !== first ? '～' + last : '') }) : null,
+      s && s.classroom ? el('span', { text: '📍 ' + s.classroom }) : null,
+      el('span', { text: '最近活動 ' + md(g.last) })),
+    el('div', { class: 'status' }, statusChips(g))];
+}
+
+function classRow(g) {
+  return el('div', { class: 'class-row' }, el('div', { class: 'info' }, classInfo(g)),
+    el('button', { type: 'button', text: '進入班級 ›', 'aria-label': '進入班級：' + g.title, onclick: () => showClass(g.key) }));
+}
+
+function reportsSection(g) {   // 這班所有完成的報告（含重新產生前的舊版），新的在前
+  const list = doneReports(g);
+  if (!list.length) return el('p', { class: 'hint', style: 'margin-left:14px',
+    text: '還沒有報告。回覆收齊後，在上面的問卷按「申請學習分析報告」。' });
+  return list.map(q => {
+    const label = md(q.completedAt || q.requestedAt) + ' 完成';
+    const [dl, mail] = reportFiles(q, list.length > 1 ? label : null);
+    return el('div', { class: 'card form-card' }, el('h2', { text: '分析報告（' + label + '）' }),
+      q.fileName ? el('p', { class: 'meta', text: q.fileName }) : null, dl, mail);
+  });
+}
+
+function classPage(g) {   // 單一班級頁：依功能整理
+  const reports = doneReports(g).length;
+  return [el('div', { class: 'class-head' }, classInfo(g, true)),
+    g.schedule ? scheduleCard(g.schedule) : null,
+    el('h2', { class: 'fn-title', text: '🍱 用餐調查' }), mealCard(g),
+    el('h2', { class: 'fn-title', text: '📝 學習問卷（' + g.forms.length + ' 份）' }),
+    g.forms.length ? g.forms.map(formCard) : el('p', { class: 'hint', text: '這班還沒建問卷；回「我的班級」按「新增一班」上傳同一份課表即可建立。' }),
+    el('h2', { class: 'fn-title', text: '📊 分析報告（' + reports + ' 份）' }), reportsSection(g)];
 }
 
 let myMeals = {};   // 我開啟過用餐調查的班 → 最近開啟時間（後台 forms 一起回傳）
 
 function mealCard(g) {   // 規格 10.4：開啟用餐調查／已開啟時給學員入口
   const at = myMeals[g.key] && myMeals[g.key].at;
+  if (!at && isEnded(g)) return el('p', { class: 'hint',text: '這班已結束，沒有開啟用餐調查。' });
   if (!at) {
-    const b = el('button', { type: 'button', class: 'small', text: '開啟用餐調查' });
+    const b =el('button', { type: 'button', class: 'small', text: '開啟用餐調查' });
     b.addEventListener('click', () => enableMeal({ formId: g.forms[0].formId }, b));
-    return el('div', { class: 'card form-card' }, el('h2', { text: '🍱 用餐調查' }),
+    return el('div', { class: 'card form-card' }, el('h2', { text: '還沒開啟' }),
       el('p', { class: 'hint', text: '開啟後，學員從用餐總入口（學院那張用餐 QR）就能填寫；每天 10:00 會把當天的用餐人數寄到你的信箱，確認後轉寄給餐廳即可。' }),
       el('p', { class: 'hint', text: '隔天早上 7:55 起才會出現在總入口，請在開課前一天以前開啟。' }), b);
   }
   const link = MEAL_INDEX_URL + 'meal.html?c=' + encodeURIComponent(g.key);
   const qr = el('img', { alt: '用餐總入口 QR Code', width: 180, height: 180 });
-  return el('div', { class: 'card form-card' }, el('h2', { text: '🍱 用餐調查：已開啟（' + md(at) + '）' }),
-    el('p', { class: 'hint', text: '隔天早上 7:55 起學員就能在總入口看到這一班；每天 10:00 會把當天用餐人數（只有人數）寄到你的信箱。課表有改的話，到「產生問卷」重新上傳課表、按「只開啟用餐調查」即可更新。' }),
+  return el('div', { class: 'card form-card' }, el('h2', { text: '已開啟（' + md(at) + '）' }),
+    el('p', { class: 'hint', text: '隔天早上 7:55 起學員就能在總入口看到這一班；每天 10:00 會把當天用餐人數（只有人數）寄到你的信箱。課表有改的話，按「新增一班」重新上傳課表、按「只開啟用餐調查」即可更新。' }),
     el('div', { class: 'row' },
       el('a', { class: 'btn ghost small', href: MEAL_INDEX_URL, target: '_blank', rel: 'noopener', text: '開啟用餐總入口' }),
       el('button', { type: 'button', class: 'ghost small', text: '複製本班直達連結', onclick: () => copy(link, '本班用餐調查連結') })),
@@ -824,33 +899,64 @@ function mealCard(g) {   // 規格 10.4：開啟用餐調查／已開啟時給�
 async function enableMeal(source, button) {
   const data = await api('meal', Object.assign({ name: profile.name, email: profile.email }, source), button, '開啟中…');
   if (!data) return false;
-  if (!$('t-list').hidden) await loadList();   // 先重整清單再顯示訊息（重整會清掉訊息列）
+  if ($('t-create').hidden) await loadList();   // 在班級頁開的：先重整再顯示訊息（重整會清掉訊息列）
   say(data.repeated ? data.code + ' 的用餐調查已經開啟，課表沒有變動，不必再按'
-    : '已開啟 ' + data.code + ' 的用餐調查，明天早上 7:55 起學員就能在用餐總入口看到這一班；開班歷程可看到這一班的用餐 QR', 'ok');
+    : '已開啟 ' + data.code + ' 的用餐調查，明天早上 7:55 起學員就能在用餐總入口看到這一班；回「我的班級」進入這班可看到用餐 QR', 'ok');
   return true;
 }
 
-async function loadList() {
+let allGroups = [], filter = 'now';
+const FILTER_EMPTY = { now: '目前沒有進行中的班級，可以切到「已結束」或「全部」看看。', done: '還沒有已結束的班級。' };
+
+function renderList() {
+  if (!allGroups.length) {   // 第一次用：只給新增一班與三份成品的說明
+    $('l-items').replaceChildren(el('div', { class: 'card empty' }, el('h2', { text: '還沒有班級' }),
+      el('p', { class: 'hint', text: '按「新增一班」上傳課表，就能拿到學習回饋問卷和通知學員的信，也可以開啟用餐調查；課程結束、回覆收齊後，在這裡申請學習分析報告。' })));
+    return;
+  }
+  const shown = allGroups.filter(g => filter === 'all' || isEnded(g) === (filter === 'done'));
+  $('l-items').replaceChildren(...(shown.length ? shown.map(classRow) : [el('p', { class: 'hint', text: FILTER_EMPTY[filter] })]));
+}
+
+let currentClass = null;   // 正在看的班（班代號）
+function renderClass() {
+  const g = allGroups.find(x => x.key === currentClass);
+  if (g) $('c-class').replaceChildren(...classPage(g).flat().filter(Boolean));
+}
+
+async function loadList() {   // 重新讀資料；在班級頁時（例如剛申請報告、開用餐調查）一併重畫那一班
   const data = await api('forms', { email: profile.email }, $('b-refresh'), '讀取中…');
   if (!data) return;
   myMeals = data.meals || {};
-  const groups = classGroups(data.forms, myMeals);
-  $('l-items').replaceChildren(...(groups.length ? groups.map(classGroup)
-    : [el('div', { class: 'card empty' }, el('h2', { text: '還沒有問卷' }),
-        el('p', { class: 'hint', text: '用這個信箱建立的問卷會列在這裡。' }),
-        el('button', { type: 'button', class: 'small', style: 'margin-top:14px', text: '去產生第一份問卷', onclick: () => selectTab('create') }))]));
+  allGroups = classGroups(data.forms, myMeals);
+  renderList();
+  if (!$('t-class').hidden) renderClass();
 }
 
-function selectTab(which) {
-  const create = which === 'create';
-  $('tab-create').setAttribute('aria-selected', String(create));
-  $('tab-list').setAttribute('aria-selected', String(!create));
-  $('t-create').hidden = !create; $('t-list').hidden = create;
-  say('');
-  if (!create) loadList();
+document.querySelectorAll('.filter button').forEach(b => b.addEventListener('click', () => {
+  filter = b.dataset.f;
+  document.querySelectorAll('.filter button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  renderList();
+}));
+
+function showView(id) {   // 我的班級／班級頁／新增一班，一次只顯示一個
+  ['t-list', 't-class', 't-create'].forEach(v => { $(v).hidden = v !== id; });
+  say(''); window.scrollTo(0, 0);
 }
-$('tab-create').addEventListener('click', () => selectTab('create'));
-$('tab-list').addEventListener('click', () => selectTab('list'));
+function showHome() { showView('t-list'); loadList(); }
+function showClass(key) {
+  currentClass = key; showView('t-class'); renderClass();
+  $('c-class').querySelector('h1').focus({ preventScroll: true });   // 讓螢幕報讀知道換頁了
+}
+function showCreate() {
+  showView('t-create');
+  $('c-result').hidden = $('c-preview').hidden = $('c-dup').hidden = true; $('c-upload').hidden = false;
+  $('i-file').value = ''; $('i-file').dispatchEvent(new Event('change')); setStep(1);
+}
+$('b-new').addEventListener('click', showCreate);
+$('b-home').addEventListener('click', showHome);
+$('b-class-home').addEventListener('click', showHome);
+$('b-done').addEventListener('click', showHome);
 $('b-refresh').addEventListener('click', loadList);
 
 // ══════════════════════════════════════════════════════════════
