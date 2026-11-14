@@ -1,6 +1,6 @@
 {
  "api": "https://script.google.com/macros/s/AKfycbwfvueeAWS5888fns4bmCOc335OEJ-DAfepPFJrP_V2WTMatrU79B8L1QPtjpy1rsH0/exec",
- "updated": "2026-11-13 12:55",
+ "updated": "2026-11-14 12:55",
  "courses": {
   "LT214P007": {
    "title": "CEMIS-II設計管理作業實務班 第007期",
@@ -17,16 +17,6 @@
    "days": [
     {
      "label": "10/21（三）",
-     "lunch": true,
-     "dinner": false
-    }
-   ]
-  },
-  "LD11BP001": {
-   "title": "ProgeCAD新手基礎操作班 第001期",
-   "days": [
-    {
-     "label": "7/9（四）",
      "lunch": true,
      "dinner": false
     }
