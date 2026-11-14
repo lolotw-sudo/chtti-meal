@@ -54,6 +54,7 @@
   .rules dd { margin:2px 0 0; }
   .done { text-align:center; }
   .done .tick { font-size:3rem; line-height:1; }
+  .ico { display:inline-flex; align-items:center; gap:6px; }   /* 圖示＋文字 */
   table { width:100%; border-collapse:collapse; margin-top:12px; font-size:.95rem; }
   th, td { text-align:left; padding:8px 6px; border-bottom:1px solid var(--line); }
   th { color:var(--muted); font-weight:600; font-size:.85rem; }
@@ -102,7 +103,7 @@
   </form>
 
   <div class="card done" id="done" hidden>
-    <p class="tick">✅</p>
+    <p class="tick"><lucian-check size="56"></lucian-check></p>
     <p><strong>已送出，收到你的用餐需求了！</strong></p>
     <p class="hint" id="doneStamp"></p>
     <table id="summary"></table>
@@ -112,19 +113,23 @@
   <section class="rules">
     <h2 style="font-size:1rem;color:var(--fg);margin:0">學院供餐規則</h2>
     <dl>
-      <dt>🍚 午餐</dt>
+      <dt class="ico"><lucian-utensils size="18"></lucian-utensils>午餐</dt>
       <dd>預設供應。臨時不在學院用餐的人請改成「不用餐」，讓廚房少準備一份。
           下午才開始、或中午前就下課的日子不供應午餐，表上不會出現。</dd>
-      <dt>🍱 晚餐</dt>
+      <dt class="ico"><lucian-moon size="18"></lucian-moon>晚餐</dt>
       <dd>對象是當晚住宿的學員；當天下課 17:20 以後、或隔天還有課需要留宿才供應。
           全院合計不足 5 人恕不供餐，會另行通知。</dd>
-      <dt>✏️ 想改答案</dt>
+      <dt class="ico"><lucian-edit size="18"></lucian-edit>想改答案</dt>
       <dd>回到這一頁、輸入同樣的姓名，就會帶出你上次填的內容，改完再送出一次即可。</dd>
     </dl>
   </section>
   <footer>中華電信學院 · 導師 李怡菁（LOLO）</footer>
 </main>
 
+<!-- 圖示：Lucian Icons v2.0.13（MIT，自行託管於 vendor/lucian-icons/），取代 emoji；不支援的舊瀏覽器只是不顯示圖示 -->
+<script type="module">
+  ['check', 'utensils', 'moon', 'edit', 'clipboard', 'alert', 'close'].forEach(function (id) { import('./vendor/lucian-icons/' + id + '.js'); });
+</script>
 <script>
 (function () {
   'use strict';
@@ -136,6 +141,14 @@
   var filledFor = '';   // 目前畫面上帶的是誰的舊資料（空 ＝ 沒帶過任何人的）
 
   var $ = function (id) { return document.getElementById(id); };
+
+  // 圖示＋文字：圖示只是裝飾，文字一律用 textContent（不用 innerHTML，避免把資料當 HTML）
+  function say(node, icon, text) {
+    node.textContent = '';
+    node.appendChild(document.createElement('lucian-' + icon)).setAttribute('size', '18');
+    node.appendChild(document.createTextNode(text));
+    node.classList.add('ico');
+  }
 
   function fatal(msg) {
     $('loading').hidden = true;
@@ -149,7 +162,7 @@
     var fs = document.createElement('fieldset');
     fs.className = kind;
     var lg = document.createElement('legend');
-    lg.textContent = kind === 'lunch' ? '🍚 午餐' : '🍱 晚餐（便當）';
+    say(lg, kind === 'lunch' ? 'utensils' : 'moon', kind === 'lunch' ? '午餐' : '晚餐（便當）');
     fs.appendChild(lg);
 
     var box = document.createElement('div');
@@ -298,7 +311,7 @@
         if (res.me) {
           render(res.me);
           filledFor = name;
-          note.textContent = '📋 已帶出你在 ' + res.me.updated + ' 填的內容，改完再送出一次就好。';
+          say(note, 'clipboard', '已帶出你在 ' + res.me.updated + ' 填的內容，改完再送出一次就好。');
           note.hidden = false;
         } else {
           note.hidden = true;
@@ -319,7 +332,7 @@
     if (!name) { $('name').focus(); return; }
     if (hasDinner() && !stayValue()) {
       $('status').className = 'hint err';
-      $('status').textContent = '❗ 請先選「這期你有住學院宿舍嗎？」，我們才知道要不要幫你準備晚餐。';
+      say($('status'), 'alert', '請先選「這期你有住學院宿舍嗎？」，我們才知道要不要幫你準備晚餐。');
       $('stayCard').scrollIntoView({ behavior: 'smooth', block: 'center' });
       $('stay-yes').focus();
       return;
@@ -348,8 +361,8 @@
       .catch(function (err) {
         $('status').innerHTML = '';
         $('status').className = 'hint err';
-        $('status').textContent = '❌ 送出失敗：' + err.message +
-          '。請確認網路後再按一次；一直失敗的話請截圖給 LOLO 老師。';
+        say($('status'), 'close', '送出失敗：' + err.message +
+          '。請確認網路後再按一次；一直失敗的話請截圖給 LOLO 老師。');
       })
       .finally(function () {
         btn.disabled = false;
