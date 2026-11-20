@@ -103,6 +103,11 @@ if (!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
   button:disabled { opacity:.5; cursor:progress; }
   button.ghost, .btn.ghost { background:transparent; color:var(--primary); }
   button.small, .btn.small { width:auto; min-height:44px; padding:8px 14px; font-size:.9rem; margin:0; white-space:nowrap; }
+  .pw { position:relative; }
+  .pw input { padding-right:52px; }
+  .pw .eye { position:absolute; right:2px; top:2px; width:44px; min-height:44px; padding:0; margin:0; background:none; border:0; color:var(--muted); }
+  .pw .eye .slash { display:none; }
+  .pw .eye[aria-pressed=true] .slash { display:inline; }
   button.link { width:auto; min-height:40px; padding:0 8px; margin:0; background:none; border:0; color:var(--primary); font-weight:600; font-size:inherit; }
   .row { display:flex; gap:10px; align-items:stretch; flex-wrap:wrap; margin-top:14px; }
   .row > button, .row > .btn { flex:1 1 150px; margin:0; }
@@ -218,7 +223,8 @@ if (!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
 <header class="top">
   <div class="brand">
     <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="var(--primary)"/>
-      <path d="M9 16.5l4.5 4.5L23 11.5" fill="none" stroke="var(--on-primary)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <g transform="translate(5 5) scale(.9167)" fill="none" stroke="var(--on-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 9l-10 -4l-10 4l10 4l10 -4v6"/><path d="M6 10.6v5.4a6 3 0 0 0 12 0v-5.4"/></g></svg>
     <span>網路學系 學習成效雲端版</span>
   </div>
   <div class="who-bar" id="who-bar" hidden>
@@ -268,7 +274,14 @@ if (!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
         <p class="hint" style="margin-top:4px">還沒有密碼？請向 LOLO 老師索取。</p>
         <form id="f-login">
           <label class="field" for="i-password">通關密碼</label>
-          <input id="i-password" type="password" autocomplete="current-password" required maxlength="200">
+          <div class="pw">
+            <input id="i-password" type="password" autocomplete="current-password" required maxlength="200">
+            <button type="button" class="eye" id="b-eye" aria-label="顯示密碼" aria-pressed="false" aria-controls="i-password">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"/><path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6"/>
+                <path class="slash" d="M3 3l18 18"/></svg>
+            </button>
+          </div>
           <button type="submit">登入</button>
         </form>
       </div>
@@ -384,6 +397,9 @@ if (!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
             </div>
           </div>
         </div>
+        <p class="hint">也可以用<strong>固定的 QR</strong>：學員掃「學習回饋問卷總入口」、點自己的班，就會進到這班<strong>最新的一份</strong>問卷——
+          QR 印一次就好，之後重新產生問卷也不用換。
+          <a id="r-fixed" target="_blank" rel="noopener">開啟總入口</a>・<button type="button" class="ghost small" id="b-fixed-qr">下載總入口 QR</button></p>
         <p id="r-warn" class="warn" hidden></p>
         <h2 class="section-title">通知學員填問卷的信</h2>
         <p class="hint" style="margin-top:0">信件請自己寄出；這裡只產生草稿。</p>
@@ -414,6 +430,7 @@ if (!/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
 // 部署後把 Apps Script 網頁應用程式網址填在這裡；本機開發（localhost）一律走模擬後台 /api
 const DEPLOYED_API_URL = 'https://script.google.com/macros/s/AKfycbwgNaBslCjgLMWSf3_toOPEqxzsNRX31skaT0FsmrW7541wa9ySYV4cN-vM3ioN1G9R/exec';
 const MEAL_INDEX_URL = 'https://lolotw-sudo.github.io/chtti-meal/';   // 用餐總入口（Canva 上那張 QR 指向它）
+const FEEDBACK_INDEX_URL = MEAL_INDEX_URL + 'feedback/';   // 學習回饋問卷總入口（固定 QR，連到各班最新那份）
 const API_URL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? '/api' : DEPLOYED_API_URL;
 const MAX_FILE = 1024 * 1024, MAX_ROWS = 200;
 const RELOGIN = ['請重新登入', '登入已逾時，請重新登入'];
@@ -706,6 +723,8 @@ $('b-meal').addEventListener('click', e => enableMeal({ table: lastTable }, e.cu
 $('b-dup-cancel').addEventListener('click', () => { $('c-dup').hidden = true; say('沒有建立新的問卷'); });
 $('b-qr').addEventListener('click', () => qrCanvas(lastResult.viewUrl).toBlob(b => saveFile(b, '問卷QR_' + lastResult.title.split(' ')[0] + '.png')));
 $('b-copy-url').addEventListener('click', () => copy(lastResult.viewUrl, '填答連結'));
+$('r-fixed').href = FEEDBACK_INDEX_URL;
+$('b-fixed-qr').addEventListener('click', () => qrCanvas(FEEDBACK_INDEX_URL).toBlob(b => saveFile(b, '學習回饋問卷總入口QR.png')));
 $('b-copy-subject').addEventListener('click', () => copy($('r-subject').value, '主旨'));
 $('b-copy-body').addEventListener('click', () => copy($('r-body').value, '內文'));
 $('b-again').addEventListener('click', () => {
@@ -1142,13 +1161,20 @@ $('b-refresh').addEventListener('click', loadList);
 // 登入與老師資料
 // ══════════════════════════════════════════════════════════════
 
+function showPassword(on) {   // 眼睛按鈕：看明碼避免打錯；登入後與登出時一律恢復隱藏
+  $('i-password').type = on ? 'text' : 'password';
+  $('b-eye').setAttribute('aria-pressed', String(on));
+  $('b-eye').setAttribute('aria-label', on ? '隱藏密碼' : '顯示密碼');
+}
+$('b-eye').addEventListener('click', () => { showPassword($('i-password').type === 'password'); $('i-password').focus(); });
+
 $('f-login').addEventListener('submit', async e => {
   e.preventDefault();
   const data = await api('login', { password: $('i-password').value }, e.submitter, '確認中…');
   if (!data) return;
   token = data.token; store.set('sessionStorage', 'cloudToken', token);
   isAdmin = data.role === 'admin'; store.set('sessionStorage', 'cloudRole', isAdmin ? 'admin' : null);
-  $('i-password').value = '';
+  $('i-password').value = ''; showPassword(false);
   enterApp();
   window.scrollTo(0, 0);
 });
