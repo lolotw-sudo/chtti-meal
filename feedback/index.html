@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>中華電信學院_學習回饋問卷</title>
+<style>
+  :root { color-scheme: light dark; --bg:#f7f7f8; --fg:#1c1c1e; --card:#fff; --line:#e3e3e6;
+           --accent:#2f5fd0; --muted:#6b6b70; --note-bg:#eef3ff; --note-line:#9db5ee; --note-fg:#1f3d85; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#141416; --fg:#f2f2f4; --card:#1f1f22; --line:#34343a;
+             --accent:#7fa2ff; --muted:#a0a0a8; --note-bg:#1c2540; --note-line:#4a64a8; --note-fg:#cbd8ff; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:24px 16px 48px; background:var(--bg); color:var(--fg);
+          font-family:-apple-system,"PingFang TC","Noto Sans TC",sans-serif; line-height:1.6; }
+  main { max-width:520px; margin:0 auto; }
+  h1 { font-size:1.5rem; margin:0 0 12px; }
+  .notice { background:var(--note-bg); border:1px solid var(--note-line); border-radius:12px;
+             padding:14px 16px; margin:0 0 20px; color:var(--note-fg); }
+  .notice strong { font-size:1.05rem; }
+  p.hint { margin:0 0 12px; color:var(--muted); font-weight:600; }
+  ul { list-style:none; margin:0; padding:0; }
+  li { margin:0 0 12px; }
+  .card { display:block; padding:16px; background:var(--card); border:1px solid var(--line);
+           border-left:5px solid var(--accent); border-radius:12px; text-decoration:none; color:inherit; }
+  a.card:hover, a.card:focus { border-color:var(--accent); outline:2px solid var(--accent); outline-offset:2px; }
+  .card.off { border-left-color:var(--line); opacity:.7; }
+  .code { font-size:.8rem; letter-spacing:.05em; color:var(--accent); font-weight:600; }
+  .name { font-size:1.1rem; font-weight:600; margin:2px 0 8px; }
+  .meta { font-size:.9rem; color:var(--muted); }
+  .ico { display:flex; align-items:center; gap:6px; }   /* 圖示＋文字（各自一行） */
+  .ico > [size] { flex:none; }
+  .go { margin-top:8px; font-weight:700; color:var(--accent); }
+  .off .go { color:var(--muted); font-weight:600; }
+  details { margin-top:20px; }
+  summary { cursor:pointer; color:var(--accent); font-weight:600; padding:8px 0; }
+  footer { margin-top:32px; font-size:.75rem; color:#8e8e93; text-align:center; }
+</style>
+</head>
+<body>
+<main>
+  <h1 class="ico"><lucian-document size="30"></lucian-document>中華電信學院_學習回饋問卷</h1>
+  <div class="notice">
+    <strong>這幾天辛苦了！</strong><br>
+    點自己的班就會打開問卷，大約 3 分鐘，你的回饋會直接影響下一梯課程怎麼調整。
+  </div>
+
+  <p class="hint" id="hint">載入中…</p>
+  <ul id="today"></ul>
+  <details id="rest"><summary>看其他班別</summary><ul id="others"></ul></details>
+
+  <footer>中華電信學院 · 導師 李怡菁（LOLO）<br>資料更新：2026-11-20 10:42</footer>
+</main>
+<!-- 圖示：Lucian Icons v2.0.13（MIT，自行託管於站上 vendor/lucian-icons/，與雲端版、用餐問卷同一套）；不支援的舊瀏覽器只是不顯示圖示 -->
+<script type="module">
+  ['document', 'calendar', 'edit'].forEach(id => import('../vendor/lucian-icons/' + id + '.js'));
+</script>
+<script>
+const LOCAL = [{"code": "LF320P011", "title": "FTTH ODN規劃設計研習班 第011期", "dates": ["2026-11-20"], "days": ["11/20（五）"], "url": "https://docs.google.com/forms/d/e/1FAIpQLSczuO5RItOiZoP8mLBwHm01n7UnQfJAbryLmBhG7Fn5szUebw/viewform", "created": "2026-11-16 11:01:21"}, {"code": "LD360P001", "title": "電信管理法與建築空間設計規範研習班 第001期", "dates": ["2026-11-27"], "days": ["11/27（五）"], "url": "", "created": ""}];
+const API = "https://script.google.com/macros/s/AKfycbwgNaBslCjgLMWSf3_toOPEqxzsNRX31skaT0FsmrW7541wa9ySYV4cN-vM3ioN1G9R/exec";
+const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Taipei' }).format(new Date());
+const shift = n => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Taipei' }).format(new Date(Date.now() + n * 864e5));
+const LO = shift(-7), HI = shift(7);
+const label = iso => { const d = new Date(iso + 'T00:00:00Z');   // 用 UTC 取月日，不受手機時區影響
+  return (d.getUTCMonth() + 1) + '/' + d.getUTCDate() + '（' + '日一二三四五六'[d.getUTCDay()] + '）'; };
+
+const div = (cls, text) => { const el = document.createElement('div'); el.className = cls; el.textContent = text; return el; };
+const withIcon = (cls, icon, text) => {           // 圖示是裝飾，旁邊一定有文字
+  const el = div(cls + ' ico', ''), i = document.createElement('lucian-' + icon);
+  i.setAttribute('size', '16'); i.setAttribute('aria-hidden', 'true');
+  el.append(i, document.createTextNode(text)); return el;
+};
+const card = c => {
+  const el = document.createElement(c.url ? 'a' : 'div');
+  el.className = 'card' + (c.url ? '' : ' off');
+  if (c.url) { el.href = c.url; el.rel = 'noopener'; }
+  el.append(div('code', c.code), div('name', c.title));
+  if (c.days.length) el.append(withIcon('meta', 'calendar', c.days.join('、')));
+  el.append(c.url ? withIcon('go', 'edit', '填寫問卷') : div('go', '問卷尚未開放，請等老師通知'));
+  const li = document.createElement('li'); li.appendChild(el); return li;
+};
+
+function render(list, empty) {
+  list.sort((a, b) => (a.dates[0] || '9') < (b.dates[0] || '9') ? -1 : 1);
+  const mine = list.filter(c => c.dates.includes(today));
+  const rest = list.filter(c => !c.dates.includes(today));
+  const top = mine.length ? mine : list;
+  ['today', 'others'].forEach(id => { document.getElementById(id).textContent = ''; });
+  document.getElementById('hint').textContent =
+    mine.length ? '今天上課的班別，請點自己的班：'
+                : (list.length ? '今天沒有課程，以下是近期班別：' : empty);
+  top.forEach(c => document.getElementById('today').appendChild(card(c)));
+  rest.forEach(c => mine.length && document.getElementById('others').appendChild(card(c)));
+  document.getElementById('rest').hidden = !(mine.length && rest.length);
+}
+
+const NONE = '目前沒有可填寫的學習回饋問卷。', FAIL = '查詢暫時失敗，請稍後重新整理這一頁。';
+render(LOCAL.slice(), API ? '載入中…' : NONE);
+// 雲端版老師的班：即時查；查不到就只顯示上面的清單（不影響 LOLO 的班）
+if (API) fetch(API + '?action=latest').then(r => r.json()).then(res => {
+  if (!res.ok) { render(LOCAL.slice(), FAIL); return; }
+  const byCode = Object.fromEntries(LOCAL.map(c => [c.code, Object.assign({}, c)]));
+  res.classes.forEach(x => {
+    const dates = x.dates.filter(d => LO <= d && d <= HI);
+    if (x.dates.length && !dates.length) return;          // 不在近期的班
+    const have = byCode[x.code];
+    if (have) { if (x.createdAt > (have.created || '')) { have.url = x.url; have.created = x.createdAt; } return; }
+    byCode[x.code] = { code: x.code, title: x.title, dates: dates, days: dates.map(label), url: x.url, created: x.createdAt };
+  });
+  render(Object.values(byCode), NONE);
+}).catch(() => render(LOCAL.slice(), FAIL));
+</script>
+<noscript><ul><li><a href="https://docs.google.com/forms/d/e/1FAIpQLSczuO5RItOiZoP8mLBwHm01n7UnQfJAbryLmBhG7Fn5szUebw/viewform">LF320P011 FTTH ODN規劃設計研習班 第011期</a></li></ul></noscript>
+</body>
+</html>
