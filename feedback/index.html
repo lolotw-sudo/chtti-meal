@@ -51,14 +51,14 @@
   <ul id="today"></ul>
   <details id="rest"><summary>看其他班別</summary><ul id="others"></ul></details>
 
-  <footer>中華電信學院 · 導師 李怡菁（LOLO）<br>資料更新：2026-11-20 10:43</footer>
+  <footer>中華電信學院 · 導師 李怡菁（LOLO）<br>資料更新：2026-11-23 16:41</footer>
 </main>
 <!-- 圖示：Lucian Icons v2.0.13（MIT，自行託管於站上 vendor/lucian-icons/，與雲端版、用餐問卷同一套）；不支援的舊瀏覽器只是不顯示圖示 -->
 <script type="module">
   ['document', 'calendar', 'edit'].forEach(id => import('../vendor/lucian-icons/' + id + '.js'));
 </script>
 <script>
-const LOCAL = [{"code": "LF320P011", "title": "FTTH ODN規劃設計研習班 第011期", "dates": ["2026-11-20"], "days": ["11/20（五）"], "url": "https://docs.google.com/forms/d/e/1FAIpQLSczuO5RItOiZoP8mLBwHm01n7UnQfJAbryLmBhG7Fn5szUebw/viewform", "created": "2026-11-16 11:01:21"}, {"code": "LD360P001", "title": "電信管理法與建築空間設計規範研習班 第001期", "dates": ["2026-11-27"], "days": ["11/27（五）"], "url": "", "created": ""}];
+const LOCAL = [{"code": "LF320P011", "title": "FTTH ODN規劃設計研習班 第011期", "dates": ["2026-11-20"], "days": ["11/20（五）"], "url": "https://docs.google.com/forms/d/e/1FAIpQLSczuO5RItOiZoP8mLBwHm01n7UnQfJAbryLmBhG7Fn5szUebw/viewform", "created": "2026-11-16 11:01:21"}, {"code": "LD360P001", "title": "電信管理法與建築空間設計規範研習班 第001期", "dates": ["2026-11-27"], "days": ["11/27（五）"], "url": "https://docs.google.com/forms/d/e/1FAIpQLSfdKkEoVJc_6zKu_O1Mr5M4JO9atzb1ciTRHl9WEskjb7oqjA/viewform", "created": "2026-11-23 16:41:10"}];
 const API = "https://script.google.com/macros/s/AKfycbwgNaBslCjgLMWSf3_toOPEqxzsNRX31skaT0FsmrW7541wa9ySYV4cN-vM3ioN1G9R/exec";
 const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Taipei' }).format(new Date());
 const shift = n => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Taipei' }).format(new Date(Date.now() + n * 864e5));
@@ -112,6 +112,6 @@ if (API) fetch(API + '?action=latest').then(r => r.json()).then(res => {
   render(Object.values(byCode), NONE);
 }).catch(() => render(LOCAL.slice(), FAIL));
 </script>
-<noscript><ul><li><a href="https://docs.google.com/forms/d/e/1FAIpQLSczuO5RItOiZoP8mLBwHm01n7UnQfJAbryLmBhG7Fn5szUebw/viewform">LF320P011 FTTH ODN規劃設計研習班 第011期</a></li></ul></noscript>
+<noscript><ul><li><a href="https://docs.google.com/forms/d/e/1FAIpQLSczuO5RItOiZoP8mLBwHm01n7UnQfJAbryLmBhG7Fn5szUebw/viewform">LF320P011 FTTH ODN規劃設計研習班 第011期</a></li><li><a href="https://docs.google.com/forms/d/e/1FAIpQLSfdKkEoVJc_6zKu_O1Mr5M4JO9atzb1ciTRHl9WEskjb7oqjA/viewform">LD360P001 電信管理法與建築空間設計規範研習班 第001期</a></li></ul></noscript>
 </body>
 </html>
