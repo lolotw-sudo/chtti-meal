@@ -1,6 +1,6 @@
 {
  "api": "https://script.google.com/macros/s/AKfycbwfvueeAWS5888fns4bmCOc335OEJ-DAfepPFJrP_V2WTMatrU79B8L1QPtjpy1rsH0/exec",
- "updated": "2026-11-27 12:55",
+ "updated": "2026-11-28 08:04",
  "courses": {
   "LT214P007": {
    "title": "CEMIS-II設計管理作業實務班 第007期",
@@ -82,56 +82,6 @@
     },
     {
      "label": "9/15（二）",
-     "lunch": true,
-     "dinner": false
-    }
-   ]
-  },
-  "LD297P002": {
-   "title": "線路規劃設計新進人員訓練班 第002期",
-   "days": [
-    {
-     "label": "8/12（三）",
-     "lunch": true,
-     "dinner": true
-    },
-    {
-     "label": "8/13（四）",
-     "lunch": true,
-     "dinner": true
-    },
-    {
-     "label": "8/14（五）",
-     "lunch": true,
-     "dinner": false
-    },
-    {
-     "label": "8/19（三）",
-     "lunch": true,
-     "dinner": true
-    },
-    {
-     "label": "8/20（四）",
-     "lunch": true,
-     "dinner": true
-    },
-    {
-     "label": "8/21（五）",
-     "lunch": true,
-     "dinner": false
-    },
-    {
-     "label": "8/26（三）",
-     "lunch": true,
-     "dinner": true
-    },
-    {
-     "label": "8/27（四）",
-     "lunch": true,
-     "dinner": false
-    },
-    {
-     "label": "9/8（二）",
      "lunch": true,
      "dinner": false
     }
